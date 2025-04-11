@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { 
-  PARTICLE_COUNT, MAX_PARTICLES, MAX_DISTANCE, FORCE_MULTIPLIER,
+  MAX_PARTICLES, MAX_PARTICLES_MOBILE, MAX_DISTANCE, FORCE_MULTIPLIER,
   PARTICLE_RADIUS_MIN, PARTICLE_RADIUS_MAX, SPEED_MAX,
   CLICK_PARTICLE_RADIUS_MIN, CLICK_PARTICLE_RADIUS_MAX, CLICK_SPEED_MAX 
 } from '../../constants/constants';
@@ -8,17 +8,25 @@ import {
 const ModernAnimatedBackground = () => {
   const canvasRef = useRef(null);
   const mousePosition = useRef({ x: null, y: null });
-  const particles = useRef([]); // <--- Usamos useRef para que persista entre renders
+  const particles = useRef([]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
+    
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resizeCanvas();
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Detectar si es un dispositivo móvil
+    const isMobile = window.innerWidth < 768;
+    const adjustedParticleCount = isMobile ? 30 : 150; // Nueva cantidad de partículas
+    const adjustedMaxParticles = isMobile ? MAX_PARTICLES_MOBILE : MAX_PARTICLES;
 
-    // Inicializamos las partículas
-    particles.current = Array.from({ length: PARTICLE_COUNT }, () => ({
+    // Inicializar partículas
+    particles.current = Array.from({ length: adjustedParticleCount }, () => ({
       x: Math.random() * canvas.width,
       y: Math.random() * canvas.height,
       radius: Math.random() * (PARTICLE_RADIUS_MAX - PARTICLE_RADIUS_MIN) + PARTICLE_RADIUS_MIN,
@@ -61,11 +69,11 @@ const ModernAnimatedBackground = () => {
           const p2 = particles.current[j];
           const dist = Math.sqrt((p.x - p2.x) ** 2 + (p.y - p2.y) ** 2);
 
-          if (dist < 150) {
+          if (dist < (isMobile ? 100 : 150)) {
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - dist / 150})`;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - dist / (isMobile ? 100 : 150)})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -83,14 +91,12 @@ const ModernAnimatedBackground = () => {
     };
 
     const handleClick = (e) => {
-      const particlesToAdd = 10;
+      const particlesToAdd = isMobile ? 5 : 10;
 
-      // Si ya alcanzamos el máximo, eliminamos las más antiguas
-      while (particles.current.length + particlesToAdd > MAX_PARTICLES) {
+      while (particles.current.length + particlesToAdd > adjustedMaxParticles) {
         particles.current.shift();
       }
 
-      // Agregamos nuevas partículas en la posición del clic
       for (let i = 0; i < particlesToAdd; i++) {
         particles.current.push({
           x: e.clientX,
@@ -102,19 +108,14 @@ const ModernAnimatedBackground = () => {
       }
     };
 
-    const handleResize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('click', handleClick);
-    window.addEventListener('resize', handleResize);
+    window.addEventListener('resize', resizeCanvas);
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('click', handleClick);
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', resizeCanvas);
     };
   }, []);
 

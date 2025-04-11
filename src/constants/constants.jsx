@@ -18,8 +18,9 @@ export const SEARCH_SUGGESTIONS = [
   "UX/UI Designer",
 ];
 //particlesBackground.jsx
-export const PARTICLE_COUNT = 100;
-export const MAX_PARTICLES = 200;
+export const MAX_PARTICLES_MOBILE = 20
+export const PARTICLE_COUNT = 10;
+export const MAX_PARTICLES = 300;
 export const MAX_DISTANCE = 300;
 export const FORCE_MULTIPLIER = 25;
 export const PARTICLE_RADIUS_MIN = 1;
@@ -33,7 +34,7 @@ export const CLICK_SPEED_MAX = 1.5;
 
 
 //backgroundwait.jsx
-export const MAX_CIRCLES = 80;
+export const MAX_CIRCLES = 100;
 export const SPEED_MULTIPLIER = 0.7;
 export const COLORSTATS = 'rgba(9, 22, 42, 0.94)'
 

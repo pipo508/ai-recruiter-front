@@ -70,7 +70,7 @@ const SimpleAnimatedBackground = () => {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full" />;
+  return <canvas ref={canvasRef} className="fixed top-0 left-0 w-full h-full" style={{ backgroundColor: 'rgba(59, 131, 246, 0.16)' }} />;
 };
 
 export default SimpleAnimatedBackground;

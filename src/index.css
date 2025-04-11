@@ -130,3 +130,29 @@ body {
   height: 100%;
   z-index: -1;
 }
+
+/* Cambiar color de la barra de desplazamiento en navegadores Webkit (Chrome, Safari, etc.) */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 8px; /* Ancho de la barra de desplazamiento */
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: rgba(9, 22, 42, 0.94); /* Color del "thumb" (parte móvil de la barra) */
+  border-radius: 4px; /* Esquinas redondeadas */
+  transition: background-color 0.3s ease; /* Transición suave cuando se pasa el cursor */
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(9, 22, 42, 1); /* Color al pasar el cursor */
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background-color: rgba(9, 22, 42, 0.2); /* Color de la pista (donde se mueve el "thumb") */
+  border-radius: 4px; /* Esquinas redondeadas */
+}
+
+/* Cambiar color de la barra de desplazamiento en Firefox */
+.scrollbar-custom {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(9, 22, 42, 0.94) rgba(9, 22, 42, 0.2); /* thumb color y track color */
+}

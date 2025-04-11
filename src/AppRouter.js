@@ -1,8 +1,10 @@
 // src/AppRouter.js
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
-import App from './App';
 import WaitingPage from './pages/WaitingPage';
-import PageTransition from './components/Transition/PageTransition';
+import PageTransition from './components/TRANSITION/PageTransition';
+import ResultsPage from './pages/ResultsPage';
+import SearchPage from './pages/SearchPage';
+import ProfileComplete from './pages/ProfileComplete';
 
 // Wrapper component para las rutas
 const AnimatedRoutes = () => {
@@ -11,8 +13,10 @@ const AnimatedRoutes = () => {
   return (
     <PageTransition>
       <Routes location={location}>
-        <Route path="/" element={<App />} />
+        <Route path="/" element={<SearchPage />} />
         <Route path="/waiting" element={<WaitingPage />} />
+        <Route path="/results" element={<ResultsPage />} />
+        <Route path="/profile/:candidateId" element={<ProfileComplete />} />
       </Routes>
     </PageTransition>
   );
