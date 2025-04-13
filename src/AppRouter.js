@@ -1,7 +1,7 @@
 // src/AppRouter.js
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import WaitingPage from './pages/WaitingPage';
-import PageTransition from './components/TRANSITION/PageTransition';
+import PageTransition from './components/Transition/PageTransition';
 import ResultsPage from './pages/ResultsPage';
 import SearchPage from './pages/SearchPage';
 import ProfileComplete from './pages/ProfileComplete';
