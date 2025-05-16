@@ -156,3 +156,58 @@ body {
   scrollbar-width: thin;
   scrollbar-color: rgba(9, 22, 42, 0.94) rgba(9, 22, 42, 0.2); /* thumb color y track color */
 }
+/* Patrón de grid para fondos */
+.bg-grid-pattern {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Sombra brillante para el texto */
+.text-shadow-glow {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.7),
+               0 0 20px rgba(255, 255, 255, 0.5),
+               0 0 30px rgba(59, 130, 246, 0.5);
+}
+
+/* Sombra brillante para elementos */
+.shadow-glow {
+  box-shadow: 0 0 5px rgba(59, 130, 246, 0.5),
+              0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+/* Animación de gradiente */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 3s ease infinite;
+}
+
+/* Estilos para scrollbar personalizada */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 10px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: rgba(59, 131, 246, 0.784);
+  border-radius: 10px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.7);
+}

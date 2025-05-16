@@ -1,7 +1,66 @@
-import React from 'react';
+
 import { Calendar, Mail, Github, ExternalLink, Award, Star, Briefcase, Users } from 'lucide-react';
 
+// Componente de iniciales para perfil (versión más grande y detallada)
+const ProfileInitialsAvatar = ({ name }) => {
+  // Función para extraer las iniciales del nombre
+  const getInitials = (fullName) => {
+    return fullName
+      .split(' ')
+      .map(name => name[0])
+      .join('')
+      .toUpperCase();
+  };
+
+  const initials = getInitials(name);
+
+  return (
+    <div className="relative group w-64 h-64">
+      {/* Efecto de gradiente animado en el borde */}
+      <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-purple-600 rounded-2xl blur opacity-60 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse"></div>
+      
+      {/* Contenedor principal con fondo gradiente */}
+      <div className="relative w-full h-full rounded-xl bg-gradient-to-br from-blue-600 via-blue-500 to-blue-700 flex items-center justify-center overflow-hidden transform group-hover:scale-105 transition-transform duration-300">
+        
+        {/* Efectos de luz */}
+        <div className="absolute top-0 left-0 w-32 h-32 bg-white rounded-full opacity-20 blur-xl"></div>
+        <div className="absolute bottom-0 right-0 w-32 h-32 bg-cyan-300 rounded-full opacity-20 blur-xl"></div>
+        
+        {/* Patrón de fondo */}
+        <div className="absolute inset-0 bg-grid-pattern opacity-20"></div>
+        
+        {/* Borde interno iluminado */}
+        <div className="absolute inset-3 border-2 border-white border-opacity-30 rounded-lg"></div>
+        
+        {/* Iniciales */}
+        <span className="text-7xl font-bold text-white tracking-wider z-10 text-shadow-glow">
+          {initials}
+        </span>
+      </div>
+    </div>
+  );
+};
+
 const CandidateProfile = () => {
+  // Datos del candidato (hardcodeado por ahora)
+  const candidate = {
+    name: "Ana García",
+    jobTitle: "Senior Frontend Developer",
+    matchPercentage: "98% Match",
+    experience: "5 años de experiencia en React, TypeScript y diseño de experiencias de usuario intuitivas. Líder de equipos ágiles y con una pasión por crear interfaces modernas.",
+    skills: ['React', 'TypeScript', 'Next.js', 'UX/UI', 'Tailwind CSS', 'Git'],
+    whyPerfect: "Ana ha demostrado ser una líder excepcional en equipos de desarrollo frontend, capaz de transformar ideas complejas en experiencias digitales intuitivas y fluidas."
+  };
+
+  // Experiencia profesional
+  const experiences = [
+    { role: 'React Developer', company: 'Empresa XYZ', period: '2022 - Presente', description: 'Lideró el desarrollo de aplicaciones web escalables utilizando React y TypeScript.' },
+    { role: 'Frontend Developer', company: 'Empresa ABC', period: '2020 - 2022', description: 'Implementó interfaces de usuario responsivas y optimizó el rendimiento de aplicaciones web.' },
+    { role: 'Junior Developer', company: 'Empresa 123', period: '2018 - 2020', description: 'Colaboró en el desarrollo de componentes React y participó en la implementación de nuevas características.' },
+    { role: 'Freelance Developer', company: 'Proyectos Varios', period: '2017 - 2018', description: 'Desarrolló sitios web y aplicaciones para diversos clientes utilizando tecnologías modernas.' },
+    { role: 'Practicante Frontend', company: 'Startup Tech', period: '2017', description: 'Comenzó su carrera desarrollando componentes UI y aprendiendo mejores prácticas de desarrollo web.' }
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 pt-16 pb-12 relative">
       {/* Círculos de fondo animados */}
@@ -10,37 +69,30 @@ const CandidateProfile = () => {
         <div className="bg-circle"></div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative scrollbar-custom overflow-y-auto h-[calc(100vh-12rem)]"> {/* Apply scroll class */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative scrollbar-custom overflow-y-auto h-[calc(100vh-12rem)]"> 
         {/* Hero Section con efecto glassmorphism mejorado */}
         <div className="relative rounded-3xl bg-gray-800/30 backdrop-blur-xl border border-gray-700 overflow-hidden shadow-[0_0_40px_rgba(59,130,246,0.1)]">
-          <div className="absolute inset-0 bg-grid-white/[0.02] -z-10" />
+          <div className="absolute inset-0 bg-grid-pattern -z-10" />
           
           <div className="p-8 md:p-12">
             <div className="flex flex-col md:flex-row gap-12 items-start">
-              {/* Profile Image Section con animación mejorada */}
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 via-cyan-500 to-purple-600 rounded-2xl blur opacity-60 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse" />
-                <img 
-                  src="https://randomuser.me/api/portraits/women/45.jpg"
-                  alt="Ana García"
-                  className="relative w-64 h-64 object-cover rounded-xl transform group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
+              {/* Profile Image reemplazado por iniciales */}
+              <ProfileInitialsAvatar name={candidate.name} />
 
               {/* Info Section con badges animados */}
               <div className="flex-1 space-y-6">
                 <div>
                   <div className="flex items-center gap-4 mb-4">
                     <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-cyan-300 to-purple-400 bg-clip-text text-transparent animate-gradient">
-                      Ana García
+                      {candidate.name}
                     </h1>
                     <span className="px-3 py-1 text-sm bg-blue-500/20 text-blue-400 border border-blue-500/50 rounded-full animate-pulse">
-                      98% Match
+                      {candidate.matchPercentage}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Star className="w-5 h-5 text-yellow-400" />
-                    <p className="text-xl font-medium text-blue-400">Senior Frontend Developer</p>
+                    <p className="text-xl font-medium text-blue-400">{candidate.jobTitle}</p>
                   </div>
                 </div>
 
@@ -65,8 +117,7 @@ const CandidateProfile = () => {
                 </div>
 
                 <p className="text-gray-300 text-lg leading-relaxed">
-                  5 años de experiencia en React, TypeScript y diseño de experiencias de usuario intuitivas. 
-                  Líder de equipos ágiles y con una pasión por crear interfaces modernas.
+                  {candidate.experience}
                 </p>
 
                 <div className="flex gap-4">
@@ -79,13 +130,13 @@ const CandidateProfile = () => {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <a href="#" className="text-gray-400 hover:text-blue-400 transition-colors duration-300 transform hover:scale-110">
+                  <a href="/3" className="text-gray-400 hover:text-blue-400 transition-colors duration-300 transform hover:scale-110">
                     <ExternalLink className="w-6 h-6" />
                   </a>
-                  <a href="#" className="text-gray-400 hover:text-purple-400 transition-colors duration-300 transform hover:scale-110">
+                  <a href="/1" className="text-gray-400 hover:text-purple-400 transition-colors duration-300 transform hover:scale-110">
                     <Github className="w-6 h-6" />
                   </a>
-                  <a href="#" className="text-gray-400 hover:text-cyan-400 transition-colors duration-300 transform hover:scale-110">
+                  <a href="/2" className="text-gray-400 hover:text-cyan-400 transition-colors duration-300 transform hover:scale-110">
                     <Mail className="w-6 h-6" />
                   </a>
                 </div>
@@ -103,7 +154,7 @@ const CandidateProfile = () => {
               Habilidades Clave
             </h2>
             <div className="flex flex-wrap gap-2">
-              {['React', 'TypeScript', 'Next.js', 'UX/UI', 'Tailwind CSS', 'Git'].map((skill) => (
+              {candidate.skills.map((skill) => (
                 <span key={skill} className="bg-blue-500/20 text-blue-400 border border-blue-500/50 px-4 py-2 text-sm rounded-full hover:bg-blue-500/30 hover:-translate-y-1 transition-all duration-300">
                   {skill}
                 </span>
@@ -118,8 +169,7 @@ const CandidateProfile = () => {
               ¿Por qué es la candidata ideal?
             </h2>
             <p className="text-gray-300">
-              Ana ha demostrado ser una líder excepcional en equipos de desarrollo frontend, 
-              capaz de transformar ideas complejas en experiencias digitales intuitivas y fluidas.
+              {candidate.whyPerfect}
             </p>
           </div>
         </div>
@@ -131,14 +181,7 @@ const CandidateProfile = () => {
             Experiencia Profesional
           </h2>
           <div className="space-y-6">
-            {[ 
-              { role: 'React Developer', company: 'Empresa XYZ', period: '2022 - Presente', description: 'Lideró el desarrollo de aplicaciones web escalables utilizando React y TypeScript.' },
-              { role: 'Frontend Developer', company: 'Empresa ABC', period: '2020 - 2022', description: 'Implementó interfaces de usuario responsivas y optimizó el rendimiento de aplicaciones web.' },
-              { role: 'Junior Developer', company: 'Empresa 123', period: '2018 - 2020', description: 'Colaboró en el desarrollo de componentes React y participó en la implementación de nuevas características.' },
-              { role: 'Freelance Developer', company: 'Proyectos Varios', period: '2017 - 2018', description: 'Desarrolló sitios web y aplicaciones para diversos clientes utilizando tecnologías modernas.' },
-              { role: 'Practicante Frontend', company: 'Startup Tech', period: '2017', description: 'Comenzó su carrera desarrollando componentes UI y aprendiendo mejores prácticas de desarrollo web.' },
-              { role: 'Desarrollador WordPress', company: 'Agencia Digital', period: '2016 - 2017', description: 'Creó y mantuvo sitios web personalizados usando WordPress y JavaScript.' }
-            ].map((experience, index) => (
+            {experiences.map((experience, index) => (
               <div key={index} className="relative pl-8 before:absolute before:left-0 before:top-2 before:w-2 before:h-2 before:bg-gradient-to-r before:from-blue-500 before:to-purple-500 before:rounded-full hover:before:scale-150 before:transition-transform">
                 <h3 className="text-white font-medium">{experience.role}</h3>
                 <p className="text-blue-400">{experience.company}</p>

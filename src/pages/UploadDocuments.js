@@ -1,18 +1,19 @@
 import React from 'react';
-import MainSection from '../components/SEARCH/MainSection';
 import Navbar from '../components/Navbar';
 import ParticlesBackground from '../components/ParticlesBackground';
+import UploadForm from '../components/UPLOAD/UploadForm';
 
-function SearchPage() {
+function UploadDocuments() {
   return (
     <div className="relative w-full h-screen bg-black text-white">
       <ParticlesBackground />
       <div className="relative z-10">
         <Navbar />
-        <MainSection />
+        <UploadForm/>
+
       </div>
     </div>
   );
 }
 
-export default SearchPage;
+export default UploadDocuments;

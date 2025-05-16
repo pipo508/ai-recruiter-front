@@ -15,7 +15,10 @@ const Navbar = () => {
       <ul className="hidden md:flex space-x-8 text-lg">
         <li><a href="/" className="hover:text-blue-500 transition duration-300">Buscar</a></li>
         <li><a href="/results" className="hover:text-blue-500 transition duration-300">Candidatos</a></li>
-        <li><a href="#" className="hover:text-blue-500 transition duration-300">Contacto</a></li>
+        <li><a href="/login" className="hover:text-blue-500 transition duration-300">login</a></li>
+        <li><a href="/upload" className="hover:text-blue-500 transition duration-300">Subir Curriculums</a></li>
+        <li><a href="/registro" className="hover:text-blue-500 transition duration-300">registro</a></li>
+        
       </ul>
 
       {/* Mobile Menu Button */}
@@ -26,9 +29,10 @@ const Navbar = () => {
       {/* Mobile Menu */}
       <div className={`absolute top-full left-0 w-full bg-[rgba(9,22,42,0.94)] backdrop-blur-lg shadow-xl flex flex-col items-center space-y-6 py-8 transition-all duration-300 ${menuOpen ? 'block' : 'hidden'}`}>
         <a href="/" className="text-xl hover:text-blue-500 transition duration-300">Inicio</a>
-        <a href="/" className="text-xl hover:text-blue-500 transition duration-300">Buscar</a>
+        <a href="/buscar" className="text-xl hover:text-blue-500 transition duration-300">Buscar</a>
         <a href="/results" className="text-xl hover:text-blue-500 transition duration-300">Candidatos</a>
-        <a href="#" className="text-xl hover:text-blue-500 transition duration-300">Contacto</a>
+        <a href="/contacto" className="text-xl hover:text-blue-500 transition duration-300">Contacto</a>
+        <a href="/upload" className="text-xl hover:text-blue-500 transition duration-300">Subir Curriculums</a>
       </div>
     </nav>
   );
