@@ -1,23 +1,18 @@
-import React, { useState } from "react";
-import ParticlesBackground from "../components/ParticlesBackground";
-import Navbar from "../components/Navbar";
-import LoginForm from "../components/LOGIN/LoginForm";
-import { loginUser } from "../services/api";
+// src/pages/LoginPage.jsx
+import React from 'react';
+import ParticlesBackground from '../components/ParticlesBackground';
+import Navbar from '../components/Navbar';
+import LoginForm from '../components/LOGIN/LoginForm';
+import { useAuth } from '../context/AuthContext'; // Asegúrate de que la ruta sea correcta
 
 const LoginPage = () => {
-  const [loading, setLoading] = useState(false);
+  const { login, loading, error } = useAuth();
 
   const handleLogin = async ({ username, password }) => {
-    setLoading(true);
     try {
-      const data = await loginUser(username, password);
-      alert(`Bienvenido ${data.user.username}`);
-      localStorage.setItem("token", data.token);
-      // Redirige o actualiza estado según tu app
-    } catch (error) {
-      alert(error.message);
-    } finally {
-      setLoading(false);
+      await login({ username, password });
+    } catch (err) {
+      console.error('Error en LoginPage:', err);
     }
   };
 
@@ -27,6 +22,9 @@ const LoginPage = () => {
       <div className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4">
         <Navbar />
         <LoginForm onLogin={handleLogin} loading={loading} />
+        {error && (
+          <p className="text-red-500 text-center mt-4">{error}</p>
+        )}
       </div>
     </div>
   );

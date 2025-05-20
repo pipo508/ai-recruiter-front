@@ -83,3 +83,43 @@ export const AVATAR_CONSTANTS = {
     ENABLED: AVATAR_HOVER_EFFECTS_CLASS,
   },
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// DOCUMENTS_VIEW_CONSTANTS actualizado
+export const DOCUMENTS_VIEW_CONSTANTS = {
+  COLORS: {
+    BACKGROUND: 'bg-gradient-to-br from-[#0F172A] to-[#09162A]',
+    CARD: 'bg-[rgba(9,22,42,0.80)] backdrop-blur-lg border border-[rgba(255,255,255,0.05)] hover:border-blue-500/30 transition-all duration-300 hover:shadow-blue-500/20 hover:shadow-lg',
+    HIGHLIGHT: 'text-blue-400 hover:text-blue-300',
+    SEARCH_BG: 'bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] focus:border-blue-500/50 text-white',
+    BUTTON: 'bg-blue-600 hover:bg-blue-500 text-white transition-all duration-300',
+    FILTER_ACTIVE: 'bg-blue-600 text-white',
+    FILTER_INACTIVE: 'bg-[rgba(9,22,42,0.80)] text-gray-300 hover:bg-[rgba(9,22,42,0.90)]',
+    LETTER_DEFAULT: 'text-gray-500 hover:text-blue-400 transition-colors duration-200',
+    LETTER_ACTIVE: 'text-blue-400 font-bold',
+    NAV: 'bg-[rgba(9,22,42,0.94)] backdrop-blur-lg border-b border-[rgba(255,255,255,0.05)]'
+  },
+  LABELS: {
+    SEARCH_PLACEHOLDER: 'Buscar documentos...',
+    NO_RESULTS: 'No se encontraron documentos que coincidan con tu búsqueda',
+    OCR_PROCESSED: 'Con OCR',
+    OCR_NOT_PROCESSED: 'Sin OCR',
+    ALL_DOCUMENTS: 'Todos'
+  },
+  ANIMATIONS: {
+    CARD_HOVER: 'transition-all duration-300 hover:-translate-y-1',
+    FADE_IN: 'animate-fadeIn'
+  }
+};
