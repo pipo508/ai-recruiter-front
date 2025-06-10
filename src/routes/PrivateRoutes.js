@@ -6,6 +6,7 @@ import ResultsPage from '../pages/ResultsPage';
 import ProfileComplete from '../pages/ProfileComplete';
 import UploadDocuments from '../pages/UploadDocuments';
 import DocumentListPage from '../pages/DocumentListPage';
+import HistoryPage from '../pages/HistoryPage';
 
 
 const PrivateRoutes = () => (
@@ -18,6 +19,7 @@ const PrivateRoutes = () => (
       <Route path="/upload" element={<UploadDocuments />} />
       <Route path="/getpdf" element={<getpdf />} />
       <Route path="/documentlist" element={<DocumentListPage />} />
+      <Route path="/history" element={<HistoryPage />} />
       {/* Más rutas privadas si necesitás */}
     </Routes>
   </PageTransition>

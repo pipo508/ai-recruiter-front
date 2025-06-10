@@ -18,9 +18,9 @@ const Navbar = () => {
         {user ? (
           <>
             <li><Link to="/" className="hover:text-blue-500 transition duration-300">Buscar</Link></li>
-            <li><Link to="/results" className="hover:text-blue-500 transition duration-300">Candidatos</Link></li>
             <li><Link to="/upload" className="hover:text-blue-500 transition duration-300">Subir Curriculums</Link></li>
             <li><Link to="/documentlist" className="hover:text-blue-500 transition duration-300">Ver Curriculums</Link></li>
+            <li><Link to="/history" className="text-xl hover:text-blue-500 transition duration-300">Historial</Link></li>
             <li className="text-sm text-blue-400">{user.username} (ID: {user.id})</li>
             <li>
               <button
@@ -49,8 +49,9 @@ const Navbar = () => {
         {user ? (
           <>
             <Link to="/" className="text-xl hover:text-blue-500 transition duration-300">Buscar</Link>
-            <Link to="/results" className="text-xl hover:text-blue-500 transition duration-300">Candidatos</Link>
             <Link to="/upload" className="text-xl hover:text-blue-500 transition duration-300">Subir Curriculums</Link>
+            <Link to="/documentlist" className="text-xl hover:text-blue-500 transition duration-300">Ver Curriculums</Link>
+            <Link to="/search-history" className="text-xl hover:text-blue-500 transition duration-300">Hisotrial</Link>
             <div className="text-xl text-blue-400">{user.username} (ID: {user.id})</div>
             <button
               onClick={logout}

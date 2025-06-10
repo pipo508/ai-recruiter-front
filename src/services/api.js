@@ -246,13 +246,168 @@ export const deletePDF = async (s3_path, user_id, token) => {
 };
 
 
+export const searchDocuments = async (query, token) => {
+  try {
+    const response = await fetch('http://127.0.0.1:5000/search', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ query }),
+    });
+
+    console.log('searchDocuments - Response status:', response.status);
+    console.log('searchDocuments - Response headers:', [...response.headers.entries()]);
+
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('searchDocuments - Non-JSON response:', text);
+      throw new Error(`La respuesta del servidor no es JSON: ${text}`);
+    }
+
+    const data = await response.json();
+    console.log('searchDocuments - Response data:', data);
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Error en la búsqueda');
+    }
+
+    return data; // Incluye document_id, filename, similarity_percentage, profile
+  } catch (error) {
+    console.error('Error en searchDocuments:', error.message, error.stack);
+    throw error;
+  }
+};
 
 
+export const fetchCandidateById = async (documentId, token) => {
+  try {
+    // Validar parámetros de entrada
+    if (!documentId) {
+      throw new Error('ID del documento es requerido');
+    }
+    
+    if (!token) {
+      throw new Error('Token de autenticación es requerido');
+    }
 
+    console.log('fetchCandidateById - Iniciando petición:', { documentId, tokenPresent: !!token });
 
+    const response = await fetch(`http://127.0.0.1:5000/document/${documentId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
 
+    console.log('fetchCandidateById - Response status:', response.status);
+    console.log('fetchCandidateById - Response headers:', [...response.headers.entries()]);
 
+    // Manejar diferentes códigos de estado
+    if (response.status === 401) {
+      throw new Error('Token de autenticación inválido o expirado');
+    }
+    
+    if (response.status === 403) {
+      throw new Error('No tienes permisos para acceder a este documento');
+    }
+    
+    if (response.status === 404) {
+      throw new Error('Documento no encontrado');
+    }
 
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const text = await response.text();
+      console.error('fetchCandidateById - Non-JSON response:', text);
+      throw new Error(`La respuesta del servidor no es JSON: ${text}`);
+    }
+
+    const data = await response.json();
+    console.log('fetchCandidateById - Response data:', data);
+
+    if (!response.ok) {
+      throw new Error(data.error || `Error del servidor: ${response.status}`);
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error en fetchCandidateById:', {
+      message: error.message,
+      stack: error.stack,
+      documentId,
+      tokenPresent: !!token
+    });
+    throw error;
+  }
+};
+
+export const getSearchHistory = async (token) => {
+  try {
+    // Validamos que el token exista antes de hacer la llamada.
+    if (!token) {
+      throw new Error('Token de autenticación es requerido para ver el historial');
+    }
+
+    // Tu backend ya tiene un endpoint GET /history, como vimos en controllers_search.py
+    const response = await fetch('http://127.0.0.1:5000/search/history', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`, // El token es crucial para la autenticación
+      },
+    });
+
+    // Verificamos si la respuesta del servidor es correcta
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al obtener el historial de búsquedas');
+    }
+
+    const data = await response.json();
+    console.log('getSearchHistory - Response data:', data);
+    return data;
+
+  } catch (error) {
+    console.error('Error en getSearchHistory:', error.message);
+    throw error;
+  }
+};
+
+// (Añade esta función en tu archivo api.js)
+
+export const updateCandidateProfile = async (documentId, profileData, token) => {
+  try {
+    if (!documentId || !profileData || !token) {
+      throw new Error('Faltan parámetros para actualizar el perfil.');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/${documentId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Error al actualizar el perfil');
+    }
+
+    const data = await response.json();
+    console.log('Perfil actualizado exitosamente:', data);
+    return data;
+
+  } catch (error) {
+    console.error('Error en updateCandidateProfile:', error.message);
+    throw error;
+  }
+};
 
 
 
