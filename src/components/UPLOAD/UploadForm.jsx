@@ -1,10 +1,15 @@
 import React, { useRef, useState } from 'react';
 import { PDF_PROCESSOR_CONSTANTS as CONSTANTS } from '../../constants/constants';
-import { UploadCloud, FileText, XCircle, Download } from 'lucide-react';
+import { UploadCloud} from 'lucide-react';
 import { processPDFs, processWithVision, skipVisionProcessing } from '../../services/api';
 import DetailCard from './DetailCard';
 import { useAuth } from '../../context/AuthContext';
 import { Spinner } from '../Spinner';
+import FileUploadZone from './file_upload_zone';
+import FileList from './file_list';
+import VisionDocumentsList from './vision_documents_list';
+import Alert from './alert_component';
+import ConfirmationAlert from './confirmation_alert';
 
 const UploadForm = () => {
   const { user, token } = useAuth();
@@ -90,7 +95,6 @@ const UploadForm = () => {
     });
   };
 
-  // Download PDF
   const handleDownloadPDF = async filename => {
     if (!user || !token) {
       addAlert('Debes iniciar sesión para descargar el documento.', 'error');
@@ -118,7 +122,6 @@ const UploadForm = () => {
     }
   };
 
-  // Vision
   const handleVisionProcessing = async doc => {
     if (!user || !token) {
       addAlert('Debes iniciar sesión para procesar con Vision.', 'error');
@@ -166,7 +169,6 @@ const UploadForm = () => {
       const resp = await processPDFs(user.id, Array.from(fileInputRef.current.files), token);
       setProcessResult(resp);
 
-      // Procesar archivos exitosos (status 200)
       if (resp.processed?.length) {
         const successfulFiles = resp.processed
           .filter(result => result.status === 200)
@@ -178,13 +180,11 @@ const UploadForm = () => {
             'success'
           );
           
-          // Filtrar los archivos exitosos de selectedFiles
           setSelectedFiles(prev => {
             const updatedFiles = prev.filter(
               file => !successfulFiles.includes(file.name)
             );
             
-            // Actualizar fileInputRef
             if (fileInputRef.current) {
               const dt = new DataTransfer();
               updatedFiles.forEach(f => dt.items.add(f));
@@ -196,7 +196,6 @@ const UploadForm = () => {
         }
       }
 
-      // Manejar documentos que necesitan Vision
       if (resp.needs_vision?.length) {
         setVisionDocuments(resp.needs_vision);
       }
@@ -207,43 +206,57 @@ const UploadForm = () => {
     }
   };
 
-  const formatFileSize = b => {
-    if (b < 1024) return `${b} bytes`;
-    if (b < 1048576) return `${(b / 1024).toFixed(1)} KB`;
-    return `${(b / 1048576).toFixed(1)} MB`;
-  };
-
   return (
     <div className="flex justify-center items-center min-h-screen px-4 py-16 bg-transparent">
-      <div className="w-full max-w-lg relative z-10">
-        {confirmationAlerts.map(a => (
-          <ConfirmationAlert
-            key={a.id}
-            type={a.type}
-            message={a.message}
-            onConfirm={() => removeConfirmationAlert(a.id, a.docId)}
-          />
-        ))}
-        {alerts.map(a => (
-          <Alert key={a.id} type={a.type} message={a.message} onClose={() => removeAlert(a.id)} />
-        ))}
-        {processResult && <DetailCard details={processResult} onAccept={() => setProcessResult(null)} />}
-        <div className="backdrop-blur-xl bg-black/30 border border-gray-700/50 shadow-2xl rounded-3xl p-8 relative overflow-hidden">
-          <h2 className="text-3xl font-bold mb-6 text-center text-white bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-            {CONSTANTS.LABELS.TITLE}
-          </h2>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <label className="block text-sm font-medium text-gray-300">{CONSTANTS.LABELS.PDF_FILES}</label>
-            <div
-              className={`relative border-2 border-dashed rounded-xl h-36 flex flex-col justify-center items-center cursor-pointer transition-all duration-300 ${
-                dragActive ? 'border-blue-500 bg-blue-500/10' : 'border-gray-600 bg-gray-800/40 hover:border-gray-500 hover:bg-gray-800/60'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current.click()}
-            >
+      <div className="w-full max-w-2xl relative z-10">
+        {/* Alerts */}
+        <div className="space-y-3 mb-6">
+          {confirmationAlerts.map(a => (
+            <ConfirmationAlert
+              key={a.id}
+              type={a.type}
+              message={a.message}
+              onConfirm={() => removeConfirmationAlert(a.id, a.docId)}
+            />
+          ))}
+          {alerts.map(a => (
+            <Alert key={a.id} type={a.type} message={a.message} onClose={() => removeAlert(a.id)} />
+          ))}
+        </div>
+
+        {/* Process Result Detail */}
+        {processResult && (
+          <div className="mb-6">
+            <DetailCard details={processResult} onAccept={() => setProcessResult(null)} />
+          </div>
+        )}
+
+        {/* Main Form Card */}
+        <div className="backdrop-blur-xl bg-gradient-to-br from-gray-900/80 via-gray-800/60 to-gray-900/80 border border-gray-700/30 shadow-2xl rounded-3xl overflow-hidden">
+          {/* Header */}
+          <div className="px-8 pt-8 pb-4">
+            <div className="text-center mb-2">
+              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-600">
+                {CONSTANTS.LABELS.TITLE}
+              </h2>
+              <div className="w-24 h-1 bg-gradient-to-r from-blue-400 to-purple-500 mx-auto mt-3 rounded-full"></div>
+            </div>
+            <p className="text-gray-400 text-center text-sm mt-4">
+              Sube tus documentos PDF para procesamiento inteligente
+            </p>
+          </div>
+
+          {/* Form Content */}
+          <div className="px-8 pb-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Upload Zone */}
+              <FileUploadZone
+                dragActive={dragActive}
+                onDrag={handleDrag}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current.click()}
+              />
+              
               <input
                 type="file"
                 ref={fileInputRef}
@@ -252,184 +265,70 @@ const UploadForm = () => {
                 accept=".pdf"
                 onChange={handleFileChange}
               />
-              <UploadCloud className="w-10 h-10 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-300 text-center px-4">Arrastra o haz clic para seleccionar PDFs</p>
-              <p className="text-xs text-gray-400 mt-1">Solo archivos PDF</p>
-            </div>
-            {selectedFiles.length > 0 && (
-              <div className="space-y-2 max-h-48 overflow-y-auto pr-1 customScrollbar">
-                {selectedFiles.map((file, i) => (
-                  <div
-                    key={`${file.name}-${i}`}
-                    className="flex items-center justify-between rounded-lg bg-gray-800/60 p-3 border border-gray-700/30"
-                  >
-                    <div className="flex items-center space-x-3">
-                      <FileText className="w-6 h-6 text-blue-400" />
-                      <div className="truncate max-w-[200px]">
-                        <p className="text-sm text-gray-200 truncate">{file.name}</p>
-                        <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadPDF(file.name)}
-                        className="text-gray-400 hover:text-green-400 transition-colors"
-                      >
-                        <Download className="w-5 h-5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeFile(i)}
-                        className="text-gray-400 hover:text-red-400 transition-colors"
-                      >
-                        <XCircle className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-            <button
-              type="submit"
-              disabled={isSubmitting || !selectedFiles.length || !user}
-              className={`w-full py-3.5 px-6 text-white font-medium rounded-xl flex items-center justify-center space-x-2 ${
-                isSubmitting ? 'bg-blue-600/70 cursor-not-allowed' : `${CONSTANTS.COLORS.PRIMARY} hover:shadow-lg hover:shadow-blue-500/20`
-              } ${(!selectedFiles.length || !user) && 'opacity-60 cursor-not-allowed'}`}
-            >
-              {isSubmitting ? (
-                <>
-                  <Spinner size={20} color="white" />
-                  <span>Procesando...</span>
-                </>
-              ) : (
-                <>
-                  <UploadCloud className="w-5 h-5" />
-                  <span>{CONSTANTS.LABELS.SUBMIT}</span>
-                </>
+
+              {/* File List */}
+              {selectedFiles.length > 0 && (
+                <FileList
+                  files={selectedFiles}
+                  onRemove={removeFile}
+                  onDownload={handleDownloadPDF}
+                />
               )}
-            </button>
-          </form>
-          {visionDocuments.length > 0 && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold text-gray-200 mb-4">
-                Documentos que requieren procesamiento con Vision
-              </h3>
-              {visionDocuments.map((doc, i) => (
-                <div
-                  key={`${doc.filename}-${i}`}
-                  className="flex items-center justify-between rounded-lg bg-gray-800/60 p-3 border border-gray-700/30 mb-2"
-                >
-                  <div className="flex items-center space-x-3">
-                    <FileText className="w-6 h-6 text-yellow-400" />
-                    <div>
-                      <p className="text-sm text-gray-200">{doc.filename}</p>
-                      <p className="text-xs text-gray-400">{doc.reason}</p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    {processingVisionDocs[doc.temp_path_id] ? (
-                      <div className="flex items-center space-x-2 text-sm text-blue-400">
-                        <Spinner size={16} />
-                        <span>Procesando...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleVisionProcessing(doc)}
-                          className="text-sm text-blue-400 hover:text-blue-300"
-                        >
-                          Procesar con Vision
-                        </button>
-                        <button
-                          onClick={() => handleSkipVision(doc)}
-                          className="text-sm text-red-400 hover:text-red-300"
-                        >
-                          Descartar
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={isSubmitting || !selectedFiles.length || !user}
+                className={`
+                  w-full py-4 px-6 text-white font-semibold rounded-xl 
+                  flex items-center justify-center space-x-3 
+                  transition-all duration-300 transform
+                  ${isSubmitting 
+                    ? 'bg-gradient-to-r from-blue-500/70 to-purple-500/70 cursor-not-allowed scale-[0.98]' 
+                    : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/25'
+                  }
+                  ${(!selectedFiles.length || !user) && 'opacity-60 cursor-not-allowed hover:scale-100'}
+                `}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Spinner size={20} color="white" />
+                    <span>Procesando documentos...</span>
+                  </>
+                ) : (
+                  <>
+                    <UploadCloud className="w-5 h-5" />
+                    <span>{CONSTANTS.LABELS.SUBMIT}</span>
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
         </div>
-        <p className="text-center text-gray-500 text-xs mt-4">
-          Procesador de PDFs v2.0 · Protección de datos garantizada
-        </p>
-      </div>
-      <style jsx>{`
-        .customScrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .customScrollbar::-webkit-scrollbar-track {
-          background: rgba(75, 85, 99, 0.2);
-          border-radius: 10px;
-        }
-        .customScrollbar::-webkit-scrollbar-thumb {
-          background: rgba(99, 102, 241, 0.5);
-          border-radius: 10px;
-        }
-        .customScrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(99, 102, 241, 0.8);
-        }
-      `}</style>
-    </div>
-  );
-};
 
-const ConfirmationAlert = ({ type, message, onConfirm }) => {
-  const bgColor = {
-    success: 'bg-green-500/20 border-green-500/50',
-    error: 'bg-red-500/20 border-red-500/50',
-    info: 'bg-blue-500/20 border-blue-500/50',
-    warning: 'bg-yellow-500/20 border-yellow-500/50',
-  };
-  const textColor = {
-    success: 'text-green-400',
-    error: 'text-red-400',
-    info: 'text-blue-400',
-    warning: 'text-yellow-400',
-  };
-  const btnColor = {
-    success: 'bg-green-600 hover:bg-green-700',
-    error: 'bg-red-600 hover:bg-red-700',
-    info: 'bg-blue-600 hover:bg-blue-700',
-    warning: 'bg-yellow-600 hover:bg-yellow-700',
-  };
-  return (
-    <div className={`${bgColor[type]} border p-4 rounded-lg mb-4 flex flex-col`}>
-      <p className={`${textColor[type]} text-sm font-medium`}>{message}</p>
-      <div className="flex justify-end mt-2">
-        <button
-          onClick={onConfirm}
-          className={`${btnColor[type]} text-white text-sm px-4 py-1.5 rounded-md`}
-        >
-          Aceptar
-        </button>
-      </div>
-    </div>
-  );
-};
+        {/* Vision Documents */}
+        {visionDocuments.length > 0 && (
+          <div className="mt-6">
+            <VisionDocumentsList
+              documents={visionDocuments}
+              processingDocs={processingVisionDocs}
+              onProcessVision={handleVisionProcessing}
+              onSkipVision={handleSkipVision}
+            />
+          </div>
+        )}
 
-const Alert = ({ type, message, onClose }) => {
-  const bgColor = {
-    success: 'bg-green-500/20 border-green-500/50',
-    error: 'bg-red-500/20 border-red-500/50',
-    info: 'bg-blue-500/20 border-blue-500/50',
-    warning: 'bg-yellow-500/20 border-yellow-500/50',
-  };
-  const textColor = {
-    success: 'text-green-400',
-    error: 'text-red-400',
-    info: 'text-blue-400',
-    warning: 'text-yellow-400',
-  };
-  return (
-    <div className={`${bgColor[type]} ${textColor[type]} border p-3 rounded-lg mb-4 flex justify-between items-center`}>
-      <p className="text-sm">{message}</p>
-      <XCircle className="w-5 h-5 cursor-pointer hover:opacity-70" onClick={onClose} />
+        {/* Footer */}
+        <div className="text-center mt-8">
+          <p className="text-gray-500 text-xs">
+            Procesador de PDFs v2.0 · Protección de datos garantizada
+          </p>
+          <div className="flex justify-center items-center space-x-2 mt-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className="text-xs text-gray-400">Sistema activo</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

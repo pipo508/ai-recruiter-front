@@ -64,11 +64,22 @@ const DocumentListPage = () => {
 
   const filtered = documents
     .filter((doc) => {
-      const matchesQuery = doc.filename.toLowerCase().includes(query.toLowerCase());
+      // --- MODIFICACIÓN PRINCIPAL: Búsqueda por nombre de candidato ---
+      // 1. Intentamos obtener el nombre del candidato desde el perfil JSON
+      const candidateName = doc.text_json && doc.text_json['Nombre completo'];
+      
+      // 2. Si existe nombre de candidato, buscamos en él; si no, usamos el filename como fallback
+      const searchTarget = candidateName || doc.filename;
+      
+      // 3. Realizamos la búsqueda en el texto objetivo
+      const matchesQuery = searchTarget.toLowerCase().includes(query.toLowerCase());
+      
+      // 4. Mantenemos el filtro OCR como estaba
       const matchesOcr = ocrFilter === '' ? true : doc.ocr_processed === (ocrFilter === 'true');
+      
       return matchesQuery && matchesOcr;
     })
-    // Este sort no es necesario para la agrupación, pero puede ser útil para un orden secundario
+    // Ordenamos por nombre de candidato si existe, sino por filename
     .sort((a, b) => {
       const nameA = (a.text_json && a.text_json['Nombre completo']) || a.filename;
       const nameB = (b.text_json && b.text_json['Nombre completo']) || b.filename;
@@ -76,12 +87,9 @@ const DocumentListPage = () => {
     });
 
   const groupedDocuments = filtered.reduce((acc, doc) => {
-    // --- INICIO DE LA MODIFICACIÓN ---
-    // 1. Intentamos obtener el nombre del candidato desde el perfil JSON.
+    // Agrupamos por la primera letra del nombre del candidato
     const candidateName = doc.text_json && doc.text_json['Nombre completo'];
-    // 2. Usamos el nombre del candidato. Si no existe, usamos el nombre del archivo como respaldo.
     const firstLetter = getFirstValidLetter(candidateName || doc.filename);
-    // --- FIN DE LA MODIFICACIÓN ---
     
     if (!acc[firstLetter]) {
       acc[firstLetter] = [];
