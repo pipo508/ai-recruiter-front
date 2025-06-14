@@ -1,11 +1,15 @@
+// src/components/Navbar.jsx
+
 import React, { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Loader } from 'lucide-react'; // <-- 1. Importa el ícono de carga
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useUpload } from '../context/UploadContext'; // <-- 2. Importa el hook de subida
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { user, logout } = useAuth();
+  const { isUploading, uploadQueue } = useUpload(); // <-- 3. Usa el contexto de subida
 
   return (
     <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 w-[95%] md:w-[85%] lg:w-[75%] bg-[rgba(9,22,42,0.94)] backdrop-blur-lg text-white py-4 px-8 rounded-3xl shadow-xl flex justify-between items-center z-50 transition-all duration-300">
@@ -15,6 +19,15 @@ const Navbar = () => {
 
       {/* Desktop Menu */}
       <ul className="hidden md:flex space-x-8 text-lg items-center">
+        {/* --- 4. INDICADOR DE SUBIDA GLOBAL --- */}
+        {isUploading && (
+          <li className="flex items-center space-x-2 text-blue-300 animate-pulse">
+            <Loader className="animate-spin" size={20} />
+            <span>Subiendo {uploadQueue.length} doc(s)...</span>
+          </li>
+        )}
+        {/* --- Fin del Indicador --- */}
+
         {user ? (
           <>
             <li><Link to="/" className="hover:text-blue-500 transition duration-300">Buscar</Link></li>
@@ -39,13 +52,13 @@ const Navbar = () => {
         )}
       </ul>
 
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button (y el resto del componente se mantiene igual) */}
       <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden text-white focus:outline-none">
         {menuOpen ? <X size={28} /> : <Menu size={28} />}
       </button>
 
-      {/* Mobile Menu */}
       <div className={`absolute top-full left-0 w-full bg-[rgba(9,22,42,0.94)] backdrop-blur-lg shadow-xl flex flex-col items-center space-y-6 py-8 transition-all duration-300 ${menuOpen ? 'block' : 'hidden'}`}>
+        {/* Puedes añadir el indicador aquí también para móviles si lo deseas */}
         {user ? (
           <>
             <Link to="/" className="text-xl hover:text-blue-500 transition duration-300">Buscar</Link>

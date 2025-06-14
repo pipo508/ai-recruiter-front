@@ -1,333 +1,394 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { PDF_PROCESSOR_CONSTANTS as CONSTANTS } from '../../constants/constants';
 import { UploadCloud} from 'lucide-react';
-import { processPDFs, processWithVision, skipVisionProcessing } from '../../services/api';
 import DetailCard from './DetailCard';
 import { useAuth } from '../../context/AuthContext';
+import { useUpload } from '../../context/UploadContext';
 import { Spinner } from '../Spinner';
 import FileUploadZone from './file_upload_zone';
 import FileList from './file_list';
 import VisionDocumentsList from './vision_documents_list';
 import Alert from './alert_component';
-import ConfirmationAlert from './confirmation_alert';
+import UploadProgress from './UploadProgress';
+import { processWithVision, skipVisionProcessing } from '../../services/api';
 
 const UploadForm = () => {
   const { user, token } = useAuth();
   const fileInputRef = useRef(null);
+  
   const [dragActive, setDragActive] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [visionDocuments, setVisionDocuments] = useState([]);
   const [alerts, setAlerts] = useState([]);
-  const [confirmationAlerts, setConfirmationAlerts] = useState([]);
-  const [processResult, setProcessResult] = useState(null);
-  const [processingVisionDocs, setProcessingVisionDocs] = useState({});
+  const [showDetailCard, setShowDetailCard] = useState(false);
 
-  const addAlert = (message, type = 'info') => {
+  const { 
+    // Estados principales
+    uploadQueue, 
+    isUploading, 
+    uploadResults, 
+    progress,
+    
+    // Estados de Vision
+    visionDocuments,
+    processingVisionDocs,
+    hasVisionDocuments,
+    
+    // Acciones principales
+    addFilesToQueue, 
+    removeFileFromQueue, 
+    startUpload, 
+    clearResults,
+    
+    // Acciones de Vision
+    removeVisionDocument,
+    setVisionProcessing,
+    clearAllResults
+  } = useUpload();
+
+  const addAlert = (message, type = 'info', details = null) => {
     const id = Date.now();
-    setAlerts(current => [...current, { id, message, type }]);
-    setTimeout(() => setAlerts(current => current.filter(a => a.id !== id)), 5000);
+    const alert = { id, message, type };
+    
+    // Si hay detalles adicionales, los agregamos
+    if (details) {
+      alert.details = details;
+    }
+    
+    setAlerts(current => [...current, alert]);
+    
+    // Auto-remove alert after 7 seconds for errors, 5 seconds for others
+    const timeout = type === 'error' ? 7000 : 5000;
+    setTimeout(() => setAlerts(current => current.filter(a => a.id !== id)), timeout);
   };
-
+  
   const removeAlert = id => setAlerts(current => current.filter(a => a.id !== id));
 
-  const addConfirmationAlert = (message, type, docId) => {
-    const id = Date.now();
-    setConfirmationAlerts(current => [...current, { id, message, type, docId }]);
-  };
+  // Función mejorada para manejar errores específicos
+  const handleUploadError = (error, filename = null) => {
+    console.error('Upload error details:', {
+      message: error.message,
+      status: error.status,
+      originalError: error.originalError,
+      filename
+    });
 
-  const removeConfirmationAlert = (id, docId) => {
-    setConfirmationAlerts(current => current.filter(a => a.id !== id));
-    setVisionDocuments(current => current.filter(d => d.temp_path_id !== docId));
-  };
+    let alertMessage = error.message;
+    let alertType = 'error';
 
-  const handleDrag = e => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(e.type === 'dragenter' || e.type === 'dragover');
-  };
-
-  const handleDrop = e => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files.length) {
-      const files = Array.from(e.dataTransfer.files).filter(f => f.type === 'application/pdf');
-      handleFiles(files);
+    // Personalizar mensajes según el tipo de error
+    if (error.status === 409) {
+      alertMessage = filename 
+        ? `El archivo "${filename}" ya existe en tu biblioteca`
+        : 'Algunos archivos ya existen en tu biblioteca';
+      alertType = 'warning';
+    } else if (error.status === 400 && error.originalError?.includes('EOF marker not found')) {
+      alertMessage = filename 
+        ? `El archivo "${filename}" está corrupto o no es un PDF válido`
+        : 'Uno o más archivos están corruptos o no son PDFs válidos';
+    } else if (error.status === 401) {
+      alertMessage = 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente';
+    } else if (error.status === 413) {
+      alertMessage = filename 
+        ? `El archivo "${filename}" es demasiado grande`
+        : 'Uno o más archivos son demasiado grandes';
+    } else if (error.status === 422) {
+      alertMessage = 'Los archivos no tienen el formato correcto. Solo se permiten archivos PDF válidos';
     }
-  };
 
-  const handleFileChange = e => {
-    if (e.target.files.length) {
-      const files = Array.from(e.target.files).filter(f => f.type === 'application/pdf');
-      handleFiles(files);
-    }
-  };
-
-  const handleFiles = files => {
-    setSelectedFiles(prev => {
-      const newFiles = files.filter(
-        newFile => !prev.some(existingFile => existingFile.name === newFile.name)
-      );
-      if (newFiles.length < files.length) {
-        addAlert('Algunos archivos ya están seleccionados y fueron omitidos.', 'warning');
-      }
-      const updatedFiles = [...prev, ...newFiles];
-      if (fileInputRef.current) {
-        const dt = new DataTransfer();
-        updatedFiles.forEach(f => dt.items.add(f));
-        fileInputRef.current.files = dt.files;
-      }
-      return updatedFiles;
+    addAlert(alertMessage, alertType, {
+      status: error.status,
+      originalError: error.originalError,
+      filename
     });
   };
 
-  const removeFile = index => {
-    setSelectedFiles(prev => {
-      const updated = [...prev];
-      updated.splice(index, 1);
-      if (fileInputRef.current) {
-        const dt = new DataTransfer();
-        updated.forEach(f => dt.items.add(f));
-        fileInputRef.current.files = dt.files;
-      }
-      return updated;
-    });
-  };
-
-  const handleDownloadPDF = async filename => {
-    if (!user || !token) {
-      addAlert('Debes iniciar sesión para descargar el documento.', 'error');
-      return;
-    }
-    try {
-      const url = `/get-pdf?user_id=${user.id}&filename=${encodeURIComponent(filename)}`;
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error);
-      }
-      const blob = await res.blob();
-      const urlBlob = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = urlBlob;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(urlBlob);
-      addAlert(`Descarga de '${filename}' completada.`, 'success');
-    } catch (e) {
-      addAlert(`Error: ${e.message}`, 'error');
+  // Función para manejar cuando se acepta el DetailCard
+  const handleAcceptDetailCard = () => {
+    setShowDetailCard(false);
+    // Solo limpiar results si no hay documentos Vision pendientes
+    if (!hasVisionDocuments) {
+      clearResults();
     }
   };
 
-  const handleVisionProcessing = async doc => {
+  // Función para limpiar completamente los resultados
+  const handleClearAllResults = () => {
+    setShowDetailCard(false);
+    clearAllResults();
+  };
+
+  const handleVisionProcessing = async (doc) => {
     if (!user || !token) {
       addAlert('Debes iniciar sesión para procesar con Vision.', 'error');
       return;
     }
-    setProcessingVisionDocs(prev => ({ ...prev, [doc.temp_path_id]: true }));
+    
+    setVisionProcessing(doc.temp_path_id, true);
+    
     try {
       await processWithVision(user.id, doc.temp_path_id, token);
-      addConfirmationAlert(`Documento '${doc.filename}' procesado con Vision.`, 'success', doc.temp_path_id);
-    } catch (e) {
-      addConfirmationAlert(`Error al procesar '${doc.filename}': ${e.message}`, 'error', doc.temp_path_id);
+      addAlert(`Documento '${doc.filename}' enviado a procesamiento con Vision.`, 'success');
+      
+      // Remover el documento de la lista de Vision usando el contexto
+      removeVisionDocument(doc.temp_path_id);
+    } catch (error) {
+      handleUploadError(error, doc.filename);
     } finally {
-      setProcessingVisionDocs(prev => ({ ...prev, [doc.temp_path_id]: false }));
+      setVisionProcessing(doc.temp_path_id, false);
     }
   };
 
-  const handleSkipVision = async doc => {
+  const handleSkipVision = async (doc) => {
     if (!user || !token) {
       addAlert('Debes iniciar sesión.', 'error');
       return;
     }
-    setProcessingVisionDocs(prev => ({ ...prev, [doc.temp_path_id]: true }));
+    
+    setVisionProcessing(doc.temp_path_id, true);
+    
     try {
       await skipVisionProcessing(doc.temp_path_id, token);
-      addConfirmationAlert(`Documento '${doc.filename}' descartado.`, 'info', doc.temp_path_id);
-    } catch (e) {
-      addConfirmationAlert(`Error al descartar '${doc.filename}': ${e.message}`, 'error', doc.temp_path_id);
+      addAlert(`Documento '${doc.filename}' descartado.`, 'info');
+      
+      // Remover el documento de la lista de Vision usando el contexto
+      removeVisionDocument(doc.temp_path_id);
+    } catch (error) {
+      handleUploadError(error, doc.filename);
     } finally {
-      setProcessingVisionDocs(prev => ({ ...prev, [doc.temp_path_id]: false }));
+      setVisionProcessing(doc.temp_path_id, false);
     }
   };
+  
+  const handleDrag = e => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    setDragActive(e.type === 'dragenter' || e.type === 'dragover'); 
+  };
+  
+  const handleDrop = e => { 
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    setDragActive(false); 
+    if (e.dataTransfer.files?.length) { 
+      handleFiles(Array.from(e.dataTransfer.files)); 
+    } 
+  };
+  
+  const handleFileChange = e => { 
+    if (e.target.files?.length) { 
+      handleFiles(Array.from(e.target.files)); 
+    } 
+  };
+  
+  const handleFiles = files => {
+    const validFiles = [];
+    const invalidFiles = [];
 
+    files.forEach(file => {
+      if (file.type === 'application/pdf') {
+        // Verificar tamaño del archivo (ej: 10MB máximo)
+        if (file.size > 10 * 1024 * 1024) {
+          addAlert(`El archivo "${file.name}" es demasiado grande (máximo 10MB)`, 'warning');
+        } else {
+          validFiles.push(file);
+        }
+      } else {
+        invalidFiles.push(file.name);
+      }
+    });
+
+    if (invalidFiles.length > 0) {
+      const fileList = invalidFiles.length > 3 
+        ? `${invalidFiles.slice(0, 3).join(', ')} y ${invalidFiles.length - 3} más`
+        : invalidFiles.join(', ');
+      addAlert(`Los siguientes archivos no son PDFs válidos: ${fileList}`, 'warning');
+    }
+    
+    if (validFiles.length > 0) { 
+      addFilesToQueue(validFiles); 
+      addAlert(`Se agregaron ${validFiles.length} archivo(s) a la cola de procesamiento`, 'success');
+    }
+  };
+  
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!user || !token) {
+    
+    if (!user) {
       addAlert('Debes iniciar sesión para procesar documentos.', 'error');
       return;
     }
-    if (!fileInputRef.current.files.length) {
-      addAlert('Selecciona al menos un PDF.', 'error');
-      return;
+    
+    if (!uploadQueue.length) { 
+      addAlert('Añade al menos un PDF a la cola de subida.', 'warning'); 
+      return; 
     }
-    setIsSubmitting(true);
+    
     try {
-      const resp = await processPDFs(user.id, Array.from(fileInputRef.current.files), token);
-      setProcessResult(resp);
-
-      if (resp.processed?.length) {
-        const successfulFiles = resp.processed
-          .filter(result => result.status === 200)
-          .map(result => result.filename);
-        
-        if (successfulFiles.length > 0) {
-          addAlert(
-            `Procesados con éxito: ${successfulFiles.join(', ')}`,
-            'success'
-          );
-          
-          setSelectedFiles(prev => {
-            const updatedFiles = prev.filter(
-              file => !successfulFiles.includes(file.name)
-            );
-            
-            if (fileInputRef.current) {
-              const dt = new DataTransfer();
-              updatedFiles.forEach(f => dt.items.add(f));
-              fileInputRef.current.files = dt.files;
-            }
-            
-            return updatedFiles;
-          });
-        }
-      }
-
-      if (resp.needs_vision?.length) {
-        setVisionDocuments(resp.needs_vision);
-      }
-    } catch (e) {
-      addAlert(`Error: ${e.message}`, 'error');
-    } finally {
-      setIsSubmitting(false);
+      await startUpload();
+    } catch (error) {
+      handleUploadError(error);
     }
   };
+  
+  useEffect(() => {
+    if (!uploadResults) return;
+    
+    const { processed = [], errors = [], needs_vision = [] } = uploadResults;
+    
+    // Mostrar DetailCard solo si hay resultados importantes que mostrar
+    if (processed.length > 0 || errors.length > 0) {
+      setShowDetailCard(true);
+    }
+    
+    // Mostrar alertas de éxito
+    if (processed.length > 0) { 
+      const message = processed.length === 1 
+        ? `Se procesó el documento "${processed[0].filename}" con éxito`
+        : `Se procesaron ${processed.length} documentos con éxito`;
+      addAlert(message, 'success'); 
+    }
+    
+    // Mostrar alertas de error mejoradas
+    if (errors.length > 0) {
+      errors.forEach(err => {
+        // Crear un objeto error simulado para usar handleUploadError
+        const errorObj = {
+          message: err.reason || 'Error desconocido',
+          originalError: err.reason,
+          status: err.status || 400
+        };
+        
+        handleUploadError(errorObj, err.filename);
+      });
+    }
+
+    // Mostrar información sobre documentos que necesitan Vision
+    if (needs_vision.length > 0) {
+      const message = needs_vision.length === 1
+        ? `El documento "${needs_vision[0].filename}" requiere procesamiento adicional con Vision`
+        : `${needs_vision.length} documentos requieren procesamiento adicional con Vision`;
+      addAlert(message, 'info');
+    }
+  }, [uploadResults]);
+
+  // Efecto para limpiar resultados cuando no hay documentos Vision pendientes
+  useEffect(() => {
+    if (!hasVisionDocuments && !showDetailCard && uploadResults) {
+      clearResults();
+    }
+  }, [hasVisionDocuments, showDetailCard, uploadResults, clearResults]);
 
   return (
     <div className="flex justify-center items-center min-h-screen px-4 py-16 bg-transparent">
       <div className="w-full max-w-2xl relative z-10">
-        {/* Alerts */}
         <div className="space-y-3 mb-6">
-          {confirmationAlerts.map(a => (
-            <ConfirmationAlert
-              key={a.id}
-              type={a.type}
-              message={a.message}
-              onConfirm={() => removeConfirmationAlert(a.id, a.docId)}
+          {alerts.map(a => (
+            <Alert 
+              key={a.id} 
+              type={a.type} 
+              message={a.message} 
+              onClose={() => removeAlert(a.id)}
+              details={a.details}
             />
           ))}
-          {alerts.map(a => (
-            <Alert key={a.id} type={a.type} message={a.message} onClose={() => removeAlert(a.id)} />
-          ))}
         </div>
-
-        {/* Process Result Detail */}
-        {processResult && (
+        
+        {/* DetailCard solo se muestra cuando showDetailCard es true */}
+        {!isUploading && showDetailCard && uploadResults && (
           <div className="mb-6">
-            <DetailCard details={processResult} onAccept={() => setProcessResult(null)} />
+            <DetailCard details={uploadResults} onAccept={handleAcceptDetailCard} />
           </div>
         )}
-
-        {/* Main Form Card */}
+        
         <div className="backdrop-blur-xl bg-gradient-to-br from-gray-900/80 via-gray-800/60 to-gray-900/80 border border-gray-700/30 shadow-2xl rounded-3xl overflow-hidden">
-          {/* Header */}
-          <div className="px-8 pt-8 pb-4">
-            <div className="text-center mb-2">
-              <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-600">
-                {CONSTANTS.LABELS.TITLE}
-              </h2>
-              <div className="w-24 h-1 bg-gradient-to-r from-blue-400 to-purple-500 mx-auto mt-3 rounded-full"></div>
-            </div>
+          <div className="px-8 pt-8 pb-4 text-center">
+            <h2 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-blue-600">
+              {CONSTANTS.LABELS.TITLE}
+            </h2>
+            <div className="w-24 h-1 bg-gradient-to-r from-blue-400 to-purple-500 mx-auto mt-3 rounded-full"></div>
             <p className="text-gray-400 text-center text-sm mt-4">
               Sube tus documentos PDF para procesamiento inteligente
             </p>
           </div>
-
-          {/* Form Content */}
+          
           <div className="px-8 pb-8">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Upload Zone */}
-              <FileUploadZone
-                dragActive={dragActive}
-                onDrag={handleDrag}
-                onDrop={handleDrop}
-                onClick={() => fileInputRef.current.click()}
+              <FileUploadZone 
+                dragActive={dragActive} 
+                onDrag={handleDrag} 
+                onDrop={handleDrop} 
+                onClick={() => fileInputRef.current.click()} 
               />
               
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                multiple
-                accept=".pdf"
-                onChange={handleFileChange}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                multiple 
+                accept=".pdf" 
+                onChange={handleFileChange} 
               />
-
-              {/* File List */}
-              {selectedFiles.length > 0 && (
-                <FileList
-                  files={selectedFiles}
-                  onRemove={removeFile}
-                  onDownload={handleDownloadPDF}
+              
+              {!isUploading && uploadQueue.length > 0 && (
+                <FileList 
+                  files={uploadQueue} 
+                  onRemove={removeFileFromQueue} 
                 />
               )}
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={isSubmitting || !selectedFiles.length || !user}
-                className={`
-                  w-full py-4 px-6 text-white font-semibold rounded-xl 
-                  flex items-center justify-center space-x-3 
-                  transition-all duration-300 transform
-                  ${isSubmitting 
+              
+              {isUploading && <UploadProgress progress={progress} />}
+              
+              <button 
+                type="submit" 
+                disabled={isUploading || !uploadQueue.length || !user} 
+                className={`w-full py-4 px-6 text-white font-semibold rounded-xl flex items-center justify-center space-x-3 transition-all duration-300 transform ${
+                  isUploading 
                     ? 'bg-gradient-to-r from-blue-500/70 to-purple-500/70 cursor-not-allowed scale-[0.98]' 
                     : 'bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/25'
-                  }
-                  ${(!selectedFiles.length || !user) && 'opacity-60 cursor-not-allowed hover:scale-100'}
-                `}
+                } ${(!uploadQueue.length || !user) && 'opacity-60 cursor-not-allowed hover:scale-100'}`}
               >
-                {isSubmitting ? (
+                {isUploading ? (
                   <>
                     <Spinner size={20} color="white" />
-                    <span>Procesando documentos...</span>
+                    <span>Procesando...</span>
                   </>
                 ) : (
                   <>
                     <UploadCloud className="w-5 h-5" />
-                    <span>{CONSTANTS.LABELS.SUBMIT}</span>
+                    <span>{`Procesar ${uploadQueue.length} Archivo(s)`}</span>
                   </>
                 )}
               </button>
+
+              {!user && (
+                <p className="text-center text-sm text-gray-400 mt-2">
+                  Debes <span className="text-blue-400">iniciar sesión</span> para procesar documentos
+                </p>
+              )}
             </form>
           </div>
         </div>
 
-        {/* Vision Documents */}
-        {visionDocuments.length > 0 && (
+        {/* VisionDocumentsList se muestra independientemente del DetailCard */}
+        {!isUploading && hasVisionDocuments && (
           <div className="mt-6">
-            <VisionDocumentsList
+            <VisionDocumentsList 
               documents={visionDocuments}
               processingDocs={processingVisionDocs}
               onProcessVision={handleVisionProcessing}
               onSkipVision={handleSkipVision}
             />
+            
+            {/* Botón para limpiar todo si el usuario no quiere procesar más documentos */}
+            <div className="mt-4 text-center">
+              <button
+                onClick={handleClearAllResults}
+                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors duration-200"
+              >
+                Limpiar todos los resultados
+              </button>
+            </div>
           </div>
         )}
-
-        {/* Footer */}
-        <div className="text-center mt-8">
-          <p className="text-gray-500 text-xs">
-            Procesador de PDFs v2.0 · Protección de datos garantizada
-          </p>
-          <div className="flex justify-center items-center space-x-2 mt-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <span className="text-xs text-gray-400">Sistema activo</span>
-          </div>
-        </div>
       </div>
     </div>
   );

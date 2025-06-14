@@ -29,8 +29,9 @@ const DocumentListPage = () => {
       fetchUserDocuments(token)
         .then((data) => {
           const sortedData = (Array.isArray(data) ? data : []).sort((a, b) => {
-            const aHasProfile = a.text_json ? 1 : 0;
-            const bHasProfile = b.text_json ? 1 : 0;
+            // <-- CORRECCIÓN: Usamos 'a.profile' en lugar de 'a.text_json' para ordenar
+            const aHasProfile = a.profile ? 1 : 0;
+            const bHasProfile = b.profile ? 1 : 0;
             return bHasProfile - aHasProfile;
           });
           setDocuments(sortedData);
@@ -64,31 +65,27 @@ const DocumentListPage = () => {
 
   const filtered = documents
     .filter((doc) => {
-      // --- MODIFICACIÓN PRINCIPAL: Búsqueda por nombre de candidato ---
-      // 1. Intentamos obtener el nombre del candidato desde el perfil JSON
-      const candidateName = doc.text_json && doc.text_json['Nombre completo'];
+      // <-- CORRECCIÓN: Buscamos el nombre del candidato en 'doc.profile'
+      const candidateName = doc.profile && doc.profile['Nombre completo'];
       
-      // 2. Si existe nombre de candidato, buscamos en él; si no, usamos el filename como fallback
       const searchTarget = candidateName || doc.filename;
       
-      // 3. Realizamos la búsqueda en el texto objetivo
       const matchesQuery = searchTarget.toLowerCase().includes(query.toLowerCase());
       
-      // 4. Mantenemos el filtro OCR como estaba
       const matchesOcr = ocrFilter === '' ? true : doc.ocr_processed === (ocrFilter === 'true');
       
       return matchesQuery && matchesOcr;
     })
-    // Ordenamos por nombre de candidato si existe, sino por filename
     .sort((a, b) => {
-      const nameA = (a.text_json && a.text_json['Nombre completo']) || a.filename;
-      const nameB = (b.text_json && b.text_json['Nombre completo']) || b.filename;
+      // <-- CORRECCIÓN: Ordenamos usando 'doc.profile'
+      const nameA = (a.profile && a.profile['Nombre completo']) || a.filename;
+      const nameB = (b.profile && b.profile['Nombre completo']) || b.filename;
       return nameA.localeCompare(nameB);
     });
 
   const groupedDocuments = filtered.reduce((acc, doc) => {
-    // Agrupamos por la primera letra del nombre del candidato
-    const candidateName = doc.text_json && doc.text_json['Nombre completo'];
+    // <-- CORRECCIÓN: Agrupamos usando 'doc.profile'
+    const candidateName = doc.profile && doc.profile['Nombre completo'];
     const firstLetter = getFirstValidLetter(candidateName || doc.filename);
     
     if (!acc[firstLetter]) {
@@ -199,7 +196,8 @@ const DocumentListPage = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-4">
                       {groupedDocuments[letter]
-                        .filter(doc => doc.text_json)
+                        // <-- CORRECCIÓN: La corrección más importante. Filtramos por 'doc.profile'
+                        .filter(doc => doc.profile) 
                         .map((doc) => (
                           <CandidateCard
                             key={doc.id}
