@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { PDF_PROCESSOR_CONSTANTS as CONSTANTS } from '../../constants/constants';
 import { UploadCloud} from 'lucide-react';
 import DetailCard from './DetailCard';
@@ -44,11 +44,10 @@ const UploadForm = () => {
     clearAllResults
   } = useUpload();
 
-  const addAlert = (message, type = 'info', details = null) => {
+  const addAlert = useCallback((message, type = 'info', details = null) => {
     const id = Date.now();
     const alert = { id, message, type };
     
-    // Si hay detalles adicionales, los agregamos
     if (details) {
       alert.details = details;
     }
@@ -58,12 +57,11 @@ const UploadForm = () => {
     // Auto-remove alert after 7 seconds for errors, 5 seconds for others
     const timeout = type === 'error' ? 7000 : 5000;
     setTimeout(() => setAlerts(current => current.filter(a => a.id !== id)), timeout);
-  };
+  }, []);
   
   const removeAlert = id => setAlerts(current => current.filter(a => a.id !== id));
 
-  // Función mejorada para manejar errores específicos
-  const handleUploadError = (error, filename = null) => {
+  const handleUploadError = useCallback((error, filename = null) => {
     console.error('Upload error details:', {
       message: error.message,
       status: error.status,
@@ -74,7 +72,6 @@ const UploadForm = () => {
     let alertMessage = error.message;
     let alertType = 'error';
 
-    // Personalizar mensajes según el tipo de error
     if (error.status === 409) {
       alertMessage = filename 
         ? `El archivo "${filename}" ya existe en tu biblioteca`
@@ -99,18 +96,15 @@ const UploadForm = () => {
       originalError: error.originalError,
       filename
     });
-  };
+  }, [addAlert]);
 
-  // Función para manejar cuando se acepta el DetailCard
   const handleAcceptDetailCard = () => {
     setShowDetailCard(false);
-    // Solo limpiar results si no hay documentos Vision pendientes
     if (!hasVisionDocuments) {
       clearResults();
     }
   };
 
-  // Función para limpiar completamente los resultados
   const handleClearAllResults = () => {
     setShowDetailCard(false);
     clearAllResults();
@@ -127,8 +121,6 @@ const UploadForm = () => {
     try {
       await processWithVision(user.id, doc.temp_path_id, token);
       addAlert(`Documento '${doc.filename}' enviado a procesamiento con Vision.`, 'success');
-      
-      // Remover el documento de la lista de Vision usando el contexto
       removeVisionDocument(doc.temp_path_id);
     } catch (error) {
       handleUploadError(error, doc.filename);
@@ -148,8 +140,6 @@ const UploadForm = () => {
     try {
       await skipVisionProcessing(doc.temp_path_id, token);
       addAlert(`Documento '${doc.filename}' descartado.`, 'info');
-      
-      // Remover el documento de la lista de Vision usando el contexto
       removeVisionDocument(doc.temp_path_id);
     } catch (error) {
       handleUploadError(error, doc.filename);
@@ -185,7 +175,6 @@ const UploadForm = () => {
 
     files.forEach(file => {
       if (file.type === 'application/pdf') {
-        // Verificar tamaño del archivo (ej: 10MB máximo)
         if (file.size > 10 * 1024 * 1024) {
           addAlert(`El archivo "${file.name}" es demasiado grande (máximo 10MB)`, 'warning');
         } else {
@@ -234,12 +223,10 @@ const UploadForm = () => {
     
     const { processed = [], errors = [], needs_vision = [] } = uploadResults;
     
-    // Mostrar DetailCard solo si hay resultados importantes que mostrar
     if (processed.length > 0 || errors.length > 0) {
       setShowDetailCard(true);
     }
     
-    // Mostrar alertas de éxito
     if (processed.length > 0) { 
       const message = processed.length === 1 
         ? `Se procesó el documento "${processed[0].filename}" con éxito`
@@ -247,30 +234,25 @@ const UploadForm = () => {
       addAlert(message, 'success'); 
     }
     
-    // Mostrar alertas de error mejoradas
     if (errors.length > 0) {
       errors.forEach(err => {
-        // Crear un objeto error simulado para usar handleUploadError
         const errorObj = {
           message: err.reason || 'Error desconocido',
           originalError: err.reason,
           status: err.status || 400
         };
-        
         handleUploadError(errorObj, err.filename);
       });
     }
 
-    // Mostrar información sobre documentos que necesitan Vision
     if (needs_vision.length > 0) {
       const message = needs_vision.length === 1
         ? `El documento "${needs_vision[0].filename}" requiere procesamiento adicional con Vision`
         : `${needs_vision.length} documentos requieren procesamiento adicional con Vision`;
       addAlert(message, 'info');
     }
-  }, [uploadResults]);
+  }, [uploadResults, handleUploadError, addAlert]);
 
-  // Efecto para limpiar resultados cuando no hay documentos Vision pendientes
   useEffect(() => {
     if (!hasVisionDocuments && !showDetailCard && uploadResults) {
       clearResults();
@@ -292,7 +274,6 @@ const UploadForm = () => {
           ))}
         </div>
         
-        {/* DetailCard solo se muestra cuando showDetailCard es true */}
         {!isUploading && showDetailCard && uploadResults && (
           <div className="mb-6">
             <DetailCard details={uploadResults} onAccept={handleAcceptDetailCard} />
@@ -368,7 +349,6 @@ const UploadForm = () => {
           </div>
         </div>
 
-        {/* VisionDocumentsList se muestra independientemente del DetailCard */}
         {!isUploading && hasVisionDocuments && (
           <div className="mt-6">
             <VisionDocumentsList 
@@ -378,7 +358,6 @@ const UploadForm = () => {
               onSkipVision={handleSkipVision}
             />
             
-            {/* Botón para limpiar todo si el usuario no quiere procesar más documentos */}
             <div className="mt-4 text-center">
               <button
                 onClick={handleClearAllResults}
