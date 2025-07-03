@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import PageTransition from '../components/TRANSITION/PageTransition';
+import PageTransition from '../components/Transition/PageTransition';
 import SearchPage from '../pages/SearchPage';
 import WaitingPage from '../pages/WaitingPage';
 import ResultsPage from '../pages/ResultsPage';

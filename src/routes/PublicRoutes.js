@@ -1,7 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
 import RegisterPage from '../pages/RegisterPage';
-import PageTransition from '../components/TRANSITION/PageTransition';
+import PageTransition from '../components/Transition/PageTransition';
 
 const PublicRoutes = () => (
   <PageTransition>
