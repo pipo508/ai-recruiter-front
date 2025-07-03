@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import PageTransition from '../components/TRANSITION/PageTransition';
 import SearchPage from '../pages/SearchPage';
 import WaitingPage from '../pages/WaitingPage';
@@ -7,7 +7,6 @@ import ProfileComplete from '../pages/ProfileComplete';
 import UploadDocuments from '../pages/UploadDocuments';
 import DocumentListPage from '../pages/DocumentListPage';
 import HistoryPage from '../pages/HistoryPage';
-
 
 const PrivateRoutes = () => (
   <PageTransition>
@@ -20,7 +19,13 @@ const PrivateRoutes = () => (
       <Route path="/getpdf" element={<getpdf />} />
       <Route path="/documentlist" element={<DocumentListPage />} />
       <Route path="/history" element={<HistoryPage />} />
-      {/* Más rutas privadas si necesitás */}
+      
+      {/* NUEVO: Redirigir rutas públicas a la página principal */}
+      <Route path="/login" element={<Navigate to="/" replace />} />
+      <Route path="/register" element={<Navigate to="/" replace />} />
+      
+      {/* NUEVO: Capturar cualquier otra ruta no encontrada */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   </PageTransition>
 );

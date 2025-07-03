@@ -139,7 +139,7 @@ const EditableContactInfo = ({
               className="px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium transition-all duration-300 hover:shadow-lg active:scale-95 hover:-translate-y-1"
               onClick={async () => {
                 try {
-                  const response = await fetch(`http://127.0.0.1:5000/document/get-pdf?user_id=${candidate.user_id}&filename=${filename}`, {
+                  const response = await fetch(`http://127.0.0.1:5000/api/document/get-pdf?user_id=${candidate.user_id}&filename=${filename}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                   });
                   const data = await response.json();

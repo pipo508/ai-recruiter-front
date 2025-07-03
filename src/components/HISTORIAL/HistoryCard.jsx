@@ -1,7 +1,7 @@
-import React from 'react';
-import { Clock, Search, ChevronRight } from 'lucide-react';
+// src/components/HISTORIAL/HistoryCard.jsx
+import { Clock, Search, ChevronRight, Trash2, Loader2 } from 'lucide-react';
 
-const HistoryCard = ({ item, index, onClick }) => {
+const HistoryCard = ({ item, index, onClick, onDelete, isDeleting }) => {
   const formatDate = (isoString) => {
     const date = new Date(isoString);
     const now = new Date();
@@ -36,10 +36,29 @@ const HistoryCard = ({ item, index, onClick }) => {
     }
   };
 
+  const handleDeleteClick = (e) => {
+    e.stopPropagation(); // Prevenir que se ejecute el onClick del card
+    if (onDelete) {
+      onDelete();
+    }
+  };
+
+  const handleCardClick = () => {
+    if (!isDeleting && onClick) {
+      onClick();
+    }
+  };
+
   return (
     <div
-      onClick={onClick}
-      className="group relative bg-gradient-to-r from-gray-900/80 to-gray-800/60 backdrop-blur-xl border border-gray-700/50 rounded-2xl p-6 cursor-pointer transition-all duration-500 hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] animate-fadeInUp"
+      onClick={handleCardClick}
+      className={`
+        group relative bg-gradient-to-r from-gray-900/80 to-gray-800/60 backdrop-blur-xl 
+        border border-gray-700/50 rounded-2xl p-6 transition-all duration-500 
+        hover:border-blue-500/50 hover:shadow-2xl hover:shadow-blue-500/10 hover:scale-[1.02] 
+        animate-fadeInUp
+        ${isDeleting ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+      `}
       style={{ animationDelay: `${index * 100}ms` }}
     >
       {/* Gradiente de fondo sutil */}
@@ -69,8 +88,34 @@ const HistoryCard = ({ item, index, onClick }) => {
           </div>
         </div>
         
-        <div className="ml-4 p-2 rounded-full bg-gray-700/50 group-hover:bg-blue-500/20 transition-all duration-300 group-hover:scale-110">
-          <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors duration-300" />
+        <div className="flex items-center gap-2 ml-4">
+          {/* Botón de eliminar */}
+          {onDelete && (
+            <button
+              onClick={handleDeleteClick}
+              disabled={isDeleting}
+              className={`
+                p-2 rounded-full transition-all duration-300 
+                ${isDeleting 
+                  ? 'bg-gray-700/50 cursor-not-allowed' 
+                  : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 hover:text-red-300 hover:scale-110'
+                }
+                opacity-0 group-hover:opacity-100 focus:opacity-100
+              `}
+              title={isDeleting ? 'Eliminando...' : 'Eliminar resultado'}
+            >
+              {isDeleting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Trash2 className="w-4 h-4" />
+              )}
+            </button>
+          )}
+          
+          {/* Flecha de navegación */}
+          <div className="p-2 rounded-full bg-gray-700/50 group-hover:bg-blue-500/20 transition-all duration-300 group-hover:scale-110">
+            <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors duration-300" />
+          </div>
         </div>
       </div>
     </div>

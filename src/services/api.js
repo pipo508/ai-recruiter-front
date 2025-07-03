@@ -1,10 +1,20 @@
-const API_BASE_URL = 'http://127.0.0.1:5000/document'; // para PDFs
-const API_AUTH_URL = 'http://127.0.0.1:5000/user'; // para login y register
+//const API_BASE_URL = 'http://127.0.0.1:5000/api/document'; // para PDFs
+//const API_AUTH_URL = 'http://127.0.0.1:5000/api/user'; // para login y register
+//const API_SEARCH_URL = 'http://127.0.0.1:5000/api/search'; // para búsquedas
 
+
+
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+
+// Construimos las URLs completas
+export const API_DOCUMENT_URL = `${API_BASE_URL}/api/document`; // para PDFs
+export const API_AUTH_URL = `${API_BASE_URL}/api/user`;     // para login y register
+export const API_SEARCH_URL = `${API_BASE_URL}/api/search`;   // para búsquedas
 // Función helper para manejar errores de respuesta
 const handleApiError = async (response, context = '') => {
   const contentType = response.headers.get('content-type');
-  
+
   if (!contentType || !contentType.includes('application/json')) {
     const text = await response.text();
     console.error(`${context} - Non-JSON response:`, text);
@@ -81,14 +91,19 @@ export const loginUser = async (username, password) => {
 
 // Registro
 export const registerUser = async (username, email, password) => {
+  console.log('🔄 registerUser - Iniciando con:', { username, email, password: '***' });
+  
   try {
+    console.log('📤 Enviando petición a:', `${API_AUTH_URL}/register`);
+    
     const response = await fetch(`${API_AUTH_URL}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, email, password }),
     });
 
-    console.log('registerUser - Response status:', response.status);
+    console.log('📥 registerUser - Response status:', response.status);
+    console.log('📥 registerUser - Response headers:', Object.fromEntries(response.headers.entries()));
 
     if (!response.ok) {
       await handleApiError(response, 'registerUser');
@@ -102,13 +117,20 @@ export const registerUser = async (username, email, password) => {
   }
 };
 
-// Procesar PDFs enviados
-export const processPDFs = async (userId, files, token) => {
+// Procesar PDFs enviados con soporte para AI toggle
+export const processPDFs = async (userId, files, token, aiEnabled = false) => {
+  // --- LOG DE DIAGNÓSTICO: INICIO DE LA FUNCIÓN ---
+  console.log(`[DIAGNÓSTICO] Iniciando 'processPDFs' para ${files.length} archivo(s).`, { userId, aiEnabled });
+
   const formData = new FormData();
   formData.append('user_id', userId);
+  formData.append('ai_enabled', aiEnabled.toString());
   files.forEach(file => formData.append('files[]', file));
 
   try {
+    // --- LOG DE DIAGNÓSTICO: ANTES DEL FETCH ---
+    console.log("[DIAGNÓSTICO] Enviando petición al backend en '/api/document/process-pdfs'.");
+
     const response = await fetch(`${API_BASE_URL}/process-pdfs`, {
       method: 'POST',
       headers: {
@@ -117,29 +139,42 @@ export const processPDFs = async (userId, files, token) => {
       body: formData,
     });
 
-    console.log('processPDFs - Response status:', response.status);
+    // --- LOG DE DIAGNÓSTICO: DESPUÉS DEL FETCH ---
+    console.log(`[DIAGNÓSTICO] Respuesta recibida del backend. Estado: ${response.status}`);
 
     if (!response.ok) {
-      await handleApiError(response, 'processPDFs');
+        // Si la respuesta no es OK (ej: 400, 403, 500), se maneja el error.
+        console.error("[DIAGNÓSTICO] La respuesta del servidor no fue OK.");
+        await handleApiError(response, 'processPDFs'); // handleApiError ya tiene sus propios logs
     }
 
     const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error en processPDFs:', error.message);
-    // Agregar información adicional para errores de procesamiento
-    if (error.status === 400 && error.originalError?.includes('EOF marker not found')) {
-      error.userMessage = 'Uno o más archivos PDF están corruptos o no son válidos. Por favor, verifica los archivos e intenta nuevamente.';
-    } else if (error.status === 409) {
-      error.userMessage = 'Algunos archivos ya existen en tu biblioteca y no se pueden subir duplicados.';
+
+    // --- LOG DE DIAGNÓSTICO: ANÁLISIS DE LA RESPUESTA ---
+    console.log("[DIAGNÓSTICO] Datos recibidos en la respuesta JSON:", data);
+
+    if (data.needs_vision && data.needs_vision.length > 0) {
+        console.warn("[DIAGNÓSTICO] El backend ha indicado que uno o más archivos necesitan procesamiento con Vision.");
     }
-    throw error;
+    if (data.processed && data.processed.length > 0) {
+        console.log("[DIAGNÓSTICO] El backend ha confirmado el procesamiento exitoso de algunos archivos.");
+    }
+
+    return data;
+
+  } catch (error) {
+    // --- LOG DE DIAGNÓSTICO: ERROR DE RED O EN EL FETCH ---
+    console.error("[DIAGNÓSTICO] Error crítico durante la ejecución de 'fetch' en processPDFs:", error);
+    throw error; // Re-lanzar el error para que el componente lo pueda capturar
   }
 };
 
 // Procesar un PDF con Vision
 export const processWithVision = async (userId, tempPathId, token) => {
   try {
+    
+    console.log('DEBUG: Datos enviados a processWithVision:', { userId, tempPathId });
+
     const response = await fetch(`${API_BASE_URL}/process-with-vision`, {
       method: 'POST',
       headers: {
@@ -191,7 +226,7 @@ export const skipVisionProcessing = async (tempPathId, token) => {
 
 export const fetchUserDocuments = async (token) => {
   try {
-    const response = await fetch('http://127.0.0.1:5000/document/list', {
+    const response = await fetch(`${API_BASE_URL}/list`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -217,7 +252,7 @@ export const deletePDF = async (s3_path, user_id, token) => {
       throw new Error('Token de autorización faltante. Por favor, inicia sesión nuevamente.');
     }
     
-    const response = await fetch('http://127.0.0.1:5000/document/delete-file', {
+    const response = await fetch(`${API_BASE_URL}/delete-file`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -243,7 +278,7 @@ export const deletePDF = async (s3_path, user_id, token) => {
 
 export const searchDocuments = async (query, token) => {
   try {
-    const response = await fetch('http://127.0.0.1:5000/search', {
+    const response = await fetch(`${API_SEARCH_URL}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -278,7 +313,7 @@ export const fetchCandidateById = async (documentId, token) => {
 
     console.log('fetchCandidateById - Iniciando petición:', { documentId, tokenPresent: !!token });
 
-    const response = await fetch(`http://127.0.0.1:5000/document/${documentId}`, {
+    const response = await fetch(`${API_BASE_URL}/${documentId}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -306,7 +341,7 @@ export const getSearchHistory = async (token) => {
       throw new Error('Token de autenticación es requerido para ver el historial');
     }
 
-    const response = await fetch('http://127.0.0.1:5000/search/history', {
+    const response = await fetch(`${API_SEARCH_URL}/history`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -337,7 +372,7 @@ export const updateProfileSection = async (documentId, sectionData, token) => {
     console.log('updateProfileSection - Enviando:', { documentId, sectionData });
 
     const response = await fetch(`${API_BASE_URL}/${documentId}`, {
-      method: 'PUT', // <--- CORRECTED METHOD
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
@@ -380,6 +415,98 @@ export const updateNestedProfileField = async (documentId, fieldPath, value, tok
     return await updateProfileSection(documentId, updateData, token);
   } catch (error) {
     console.error('Error en updateNestedProfileField:', error.message);
+    throw error;
+  }
+};
+
+
+export const deleteAllDocuments = async (token) => {
+  try {
+    console.log('🔍 DEBUGGING deleteAllDocuments:');
+    console.log('🔍 Token:', token ? `Presente (${token.substring(0, 20)}...)` : 'AUSENTE');
+    console.log('🔍 API_BASE_URL:', API_BASE_URL);
+    console.log('🔍 URL completa:', `http://127.0.0.1:5000/api/document/delete-all`);
+    
+    if (!token) {
+      throw new Error('Token de autorización faltante. Por favor, inicia sesión nuevamente.');
+    }
+    
+    const requestConfig = {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ 
+        confirmation: "DELETE_ALL_DOCUMENTS" 
+      }),
+    };
+    
+    console.log('🔍 Configuración de la solicitud:', requestConfig);
+    
+    const response = await fetch(`http://127.0.0.1:5000/api/document/delete-all`, requestConfig);
+    
+    console.log('🔍 Response recibida:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      url: response.url,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('❌ Error response body:', errorText);
+      throw new Error(`Error HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Delete all successful:', data);
+    return data;
+    
+  } catch (error) {
+    console.error('❌ Error completo en deleteAllDocuments:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    throw error;
+  }
+};
+
+
+// Agregar esta función al final de tu archivo api.js
+export const deleteSearchResult = async (searchId, token) => {
+  try {
+    if (!token) {
+      throw new Error('Token de autorización faltante. Por favor, inicia sesión nuevamente.');
+    }
+    
+    if (!searchId) {
+      throw new Error('ID del resultado de búsqueda es requerido.');
+    }
+    
+    console.log('deleteSearchResult - Eliminando resultado:', { searchId, tokenPresent: !!token });
+    
+    const response = await fetch(`${API_SEARCH_URL}/history/${searchId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    console.log('deleteSearchResult - Response status:', response.status);
+
+    if (!response.ok) {
+      await handleApiError(response, 'deleteSearchResult');
+    }
+
+    const data = await response.json();
+    console.log('Delete search result successful:', data);
+    return data;
+  } catch (error) {
+    console.error('❌ Error en deleteSearchResult:', error.message);
     throw error;
   }
 };

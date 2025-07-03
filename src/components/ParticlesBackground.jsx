@@ -22,7 +22,7 @@ const ModernAnimatedBackground = () => {
 
     // Detectar si es un dispositivo móvil
     const isMobile = window.innerWidth < 768;
-    const adjustedParticleCount = isMobile ? 30 : 100; // Nueva cantidad de partículas
+    const adjustedParticleCount = isMobile ? 30 : 30; // Nueva cantidad de partículas
     const adjustedMaxParticles = isMobile ? MAX_PARTICLES_MOBILE : MAX_PARTICLES;
 
     // Inicializar partículas

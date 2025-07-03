@@ -73,8 +73,13 @@ const uploadReducer = (state, action) => {
         errors: [],
         status: UPLOAD_STATES.IDLE
       };
-    
-    // ... (el resto de tus casos del reducer) ...
+
+    // Acciones para AI Toggle
+    case 'SET_AI_ENABLED':
+      return {
+        ...state,
+        aiEnabled: action.payload
+      };
 
     case 'SET_VISION_DOCUMENTS':
         return {
@@ -127,14 +132,14 @@ const initialState = {
   uploadResults: null,
   errors: [],
   visionDocuments: [],
-  processingVisionDocs: {}
+  processingVisionDocs: {},
+  aiEnabled: false // Estado para el AI Toggle
 };
 
 export const UploadProvider = ({ children }) => {
   const [state, dispatch] = useReducer(uploadReducer, initialState);
   const { user, token } = useAuth();
 
-  // ... (tus otras acciones como addFilesToQueue, etc.) ...
   const addFilesToQueue = useCallback((files) => {
     dispatch({ type: 'ADD_FILES', payload: files });
   }, []);
@@ -147,7 +152,12 @@ export const UploadProvider = ({ children }) => {
     dispatch({ type: 'CLEAR_QUEUE' });
   }, []);
 
-  // Función principal de upload (CON LA NUEVA CORRECCIÓN)
+  // Nueva función para manejar el AI Toggle
+  const setAIEnabled = useCallback((enabled) => {
+    dispatch({ type: 'SET_AI_ENABLED', payload: enabled });
+  }, []);
+
+  // Función principal de upload actualizada con AI model selection
   const startUpload = useCallback(async () => {
     // 1. Comprobaciones iniciales para asegurar que podemos iniciar la subida.
     if (!user || !token || state.uploadQueue.length === 0) {
@@ -179,8 +189,8 @@ export const UploadProvider = ({ children }) => {
       });
 
       try {
-        // 6. Llamamos a la API, pero esta vez con un array que contiene UN SOLO archivo.
-        const response = await processPDFs(user.id, [file], token);
+        // 6. Llamamos a la API, pasando el estado de AI habilitado
+        const response = await processPDFs(user.id, [file], token, state.aiEnabled);
         
         // 7. Acumulamos los resultados de esta llamada individual.
         if (response.processed) accumulatedResults.processed.push(...response.processed);
@@ -196,9 +206,8 @@ export const UploadProvider = ({ children }) => {
     // 9. Una vez que el bucle termina, enviamos todos los resultados acumulados al estado.
     dispatch({ type: 'UPLOAD_SUCCESS', payload: accumulatedResults });
 
-  }, [user, token, state.uploadQueue]);
+  }, [user, token, state.uploadQueue, state.aiEnabled]);
 
-  // ... (el resto de tus funciones del contexto) ...
   const setVisionDocuments = useCallback((documents) => {
     dispatch({ type: 'SET_VISION_DOCUMENTS', payload: documents });
     }, []);
@@ -230,14 +239,12 @@ export const UploadProvider = ({ children }) => {
         dispatch({ type: 'CLEAR_ALL_RESULTS' });
     }, []);
 
-
   // Getters derivados
   const isUploading = state.status === UPLOAD_STATES.UPLOADING;
   const hasVisionDocuments = state.visionDocuments.length > 0;
   const hasProcessingVisionDocs = Object.values(state.processingVisionDocs).some(Boolean);
 
   const value = {
-    // ... (el resto de tu objeto 'value') ...
     uploadQueue: state.uploadQueue,
     isUploading,
     uploadResults: state.uploadResults,
@@ -248,10 +255,12 @@ export const UploadProvider = ({ children }) => {
     processingVisionDocs: state.processingVisionDocs,
     hasVisionDocuments,
     hasProcessingVisionDocs,
+    aiEnabled: state.aiEnabled, // Nuevo estado
     addFilesToQueue,
     removeFileFromQueue,
     clearQueue,
     startUpload,
+    setAIEnabled, // Nueva función
     setVisionDocuments,
     addVisionDocuments,
     removeVisionDocument,

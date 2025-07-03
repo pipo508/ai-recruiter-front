@@ -1,7 +1,9 @@
 // src/context/AuthContext.js
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { loginUser } from '../services/api'; // Importamos la función de api.js
 import { useNavigate } from 'react-router-dom';
+import { jwtDecode } from 'jwt-decode'; // Cambio aquí: importación nombrada
+
 
 const AuthContext = createContext();
 
@@ -12,13 +14,44 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
+  const isTokenExpired = (token) => {
+    try {
+      const { exp } = jwtDecode(token);
+      return exp < Date.now() / 1000;
+    } catch {
+      return true;
+    }
+  };
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setToken(null);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/login');
+  }, [navigate]);
+
   // Cargar usuario desde localStorage al montar el componente
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser && token) {
-      setUser(JSON.parse(storedUser));
+    const storedToken = localStorage.getItem('token');
+
+    if (storedUser && storedToken) {
+      if (isTokenExpired(storedToken)) {
+        logout(); // También redirige
+      } else {
+        setUser(JSON.parse(storedUser));
+        setToken(storedToken);
+        
+        // Redirigir a la ruta guardada si existe
+        const redirectPath = sessionStorage.getItem('pre_token_expired_path');
+        if (redirectPath) {
+          navigate(redirectPath);
+          sessionStorage.removeItem('pre_token_expired_path');
+        }
+      }
     }
-  }, [token]);
+  }, [logout, navigate]); // Ahora incluimos las dependencias
 
   const login = async ({ username, password }) => {
     setLoading(true);
@@ -30,7 +63,14 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token);
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      navigate('/'); // Redirigir a la página principal después del login
+      
+      // Redirigir a la ruta guardada o a la página principal
+      const redirectPath = sessionStorage.getItem('pre_token_expired_path');
+      navigate(redirectPath || '/');
+      if (redirectPath) {
+        sessionStorage.removeItem('pre_token_expired_path');
+      }
+      
       return data;
     } catch (err) {
       setError(err.message || 'Error al iniciar sesión');
@@ -38,14 +78,6 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
   };
 
   return (

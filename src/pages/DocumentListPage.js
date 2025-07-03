@@ -5,6 +5,7 @@ import { fetchUserDocuments } from '../services/api';
 import ParticlesBackground from '../components/ParticlesBackground';
 import Navbar from '../components/Navbar';
 import ButtonSubir from '../components/GET_PDF/ButtonSubir';
+import DeleteAllButton from '../components/GET_PDF/DeleteAllButton '; // Importar el nuevo componente
 import Spinner from '../components/LoadingSpinner';
 import { useAuth } from '../context/AuthContext';
 
@@ -26,10 +27,10 @@ const DocumentListPage = () => {
       }
 
       setLoading(true);
+      console.log("Token que se envía:", token);
       fetchUserDocuments(token)
         .then((data) => {
           const sortedData = (Array.isArray(data) ? data : []).sort((a, b) => {
-            // <-- CORRECCIÓN: Usamos 'a.profile' en lugar de 'a.text_json' para ordenar
             const aHasProfile = a.profile ? 1 : 0;
             const bHasProfile = b.profile ? 1 : 0;
             return bHasProfile - aHasProfile;
@@ -65,26 +66,19 @@ const DocumentListPage = () => {
 
   const filtered = documents
     .filter((doc) => {
-      // <-- CORRECCIÓN: Buscamos el nombre del candidato en 'doc.profile'
       const candidateName = doc.profile && doc.profile['Nombre completo'];
-      
       const searchTarget = candidateName || doc.filename;
-      
       const matchesQuery = searchTarget.toLowerCase().includes(query.toLowerCase());
-      
       const matchesOcr = ocrFilter === '' ? true : doc.ocr_processed === (ocrFilter === 'true');
-      
       return matchesQuery && matchesOcr;
     })
     .sort((a, b) => {
-      // <-- CORRECCIÓN: Ordenamos usando 'doc.profile'
       const nameA = (a.profile && a.profile['Nombre completo']) || a.filename;
       const nameB = (b.profile && b.profile['Nombre completo']) || b.filename;
       return nameA.localeCompare(nameB);
     });
 
   const groupedDocuments = filtered.reduce((acc, doc) => {
-    // <-- CORRECCIÓN: Agrupamos usando 'doc.profile'
     const candidateName = doc.profile && doc.profile['Nombre completo'];
     const firstLetter = getFirstValidLetter(candidateName || doc.filename);
     
@@ -111,12 +105,33 @@ const DocumentListPage = () => {
     );
   };
 
+  // Nueva función para manejar la eliminación de todos los documentos
+  const handleDeleteAll = (result) => {
+    console.log('Todos los documentos eliminados:', result);
+    
+    // Limpiar el estado de documentos
+    setDocuments([]);
+    
+    // Resetear filtros
+    setQuery('');
+    setOcrFilter('');
+    
+    // Opcional: mostrar mensaje de éxito
+    // Aquí podrías agregar una notificación toast si tienes un sistema de notificaciones
+    
+    // Recargar documentos para asegurar sincronización
+    setReloadDocuments((prev) => prev + 1);
+  };
+
   const handleRetry = () => {
     setQuery('');
     setOcrFilter('');
     setError(null);
     setReloadDocuments((prev) => prev + 1);
   };
+
+  // Contar documentos con perfil para el botón delete all
+  const documentsWithProfile = documents.filter(doc => doc.profile).length;
 
   return (
     <div className="relative w-full min-h-screen bg-black text-white">
@@ -145,7 +160,13 @@ const DocumentListPage = () => {
               </h1>
               <p className="text-gray-400">Encuentra y gestiona todos tus documentos</p>
             </div>
-            <ButtonSubir />
+            <div className="flex items-center space-x-3 mt-4 md:mt-0">
+              <DeleteAllButton 
+                onDeleteAll={handleDeleteAll}
+                documentsCount={documentsWithProfile}
+              />
+              <ButtonSubir />
+            </div>
           </div>
 
           <div className="search-container rounded-2xl p-6 shadow-xl mb-8">
@@ -196,7 +217,6 @@ const DocumentListPage = () => {
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-4">
                       {groupedDocuments[letter]
-                        // <-- CORRECCIÓN: La corrección más importante. Filtramos por 'doc.profile'
                         .filter(doc => doc.profile) 
                         .map((doc) => (
                           <CandidateCard

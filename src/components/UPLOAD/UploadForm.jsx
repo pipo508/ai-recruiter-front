@@ -10,6 +10,7 @@ import FileList from './file_list';
 import VisionDocumentsList from './vision_documents_list';
 import Alert from './alert_component';
 import UploadProgress from './UploadProgress';
+import AIToggle from './AIToggle'; // Importar el componente AIToggle
 import { processWithVision, skipVisionProcessing } from '../../services/api';
 
 const UploadForm = () => {
@@ -32,11 +33,17 @@ const UploadForm = () => {
     processingVisionDocs,
     hasVisionDocuments,
     
+    // Estado de AI
+    aiEnabled,
+    
     // Acciones principales
     addFilesToQueue, 
     removeFileFromQueue, 
     startUpload, 
     clearResults,
+    
+    // Acciones de AI
+    setAIEnabled,
     
     // Acciones de Vision
     removeVisionDocument,
@@ -146,6 +153,12 @@ const UploadForm = () => {
     } finally {
       setVisionProcessing(doc.temp_path_id, false);
     }
+  };
+
+  // Manejar el toggle de AI
+  const handleAIToggle = (enabled) => {
+    setAIEnabled(enabled);
+
   };
   
   const handleDrag = e => { 
@@ -293,6 +306,28 @@ const UploadForm = () => {
           
           <div className="px-8 pb-8">
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* AI Toggle Section */}
+              <div className="border-b border-gray-700/30 pb-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-1">
+                      Modo de Procesamiento
+                    </h3>
+                    <p className="text-sm text-gray-400">
+                      {aiEnabled 
+                        ? 'GPT-4o-mini: Mayor precisión y análisis detallado'
+                        : 'GPT-3.5-turbo: Procesamiento rápido y estándar'
+                      }
+                    </p>
+                  </div>
+                  <AIToggle 
+                    isEnabled={aiEnabled}
+                    onToggle={handleAIToggle}
+                    disabled={isUploading}
+                  />
+                </div>
+              </div>
+
               <FileUploadZone 
                 dragActive={dragActive} 
                 onDrag={handleDrag} 
@@ -330,12 +365,16 @@ const UploadForm = () => {
                 {isUploading ? (
                   <>
                     <Spinner size={20} color="white" />
-                    <span>Procesando...</span>
+                    <span>
+                      Procesando{aiEnabled ? ' con AI+' : ''}...
+                    </span>
                   </>
                 ) : (
                   <>
                     <UploadCloud className="w-5 h-5" />
-                    <span>{`Procesar ${uploadQueue.length} Archivo(s)`}</span>
+                    <span>
+                      {`Procesar ${uploadQueue.length} Archivo(s)${aiEnabled ? ' con AI+' : ''}`}
+                    </span>
                   </>
                 )}
               </button>

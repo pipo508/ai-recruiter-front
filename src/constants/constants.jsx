@@ -19,17 +19,17 @@ export const SEARCH_SUGGESTIONS = [
 
 export const MAX_PARTICLES_MOBILE = 20;
 export const PARTICLE_COUNT = 10;
-export const MAX_PARTICLES = 150;
+export const MAX_PARTICLES = 30;
 export const MAX_DISTANCE = 250;
 export const FORCE_MULTIPLIER = 25;
 export const PARTICLE_RADIUS_MIN = 1;
 export const PARTICLE_RADIUS_MAX = 4;
-export const SPEED_MIN = -0.5;
-export const SPEED_MAX = 1.5;
+export const SPEED_MIN = -0.2;
+export const SPEED_MAX = 2.3;
 export const CLICK_PARTICLE_RADIUS_MIN = 1;
 export const CLICK_PARTICLE_RADIUS_MAX = 3;
-export const CLICK_SPEED_MIN = -0.5;
-export const CLICK_SPEED_MAX = 1.5;
+export const CLICK_SPEED_MIN = -0.2;
+export const CLICK_SPEED_MAX = 2.3;
 
 export const MAX_CIRCLES = 100;
 export const SPEED_MULTIPLIER = 0.7;

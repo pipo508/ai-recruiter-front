@@ -62,8 +62,8 @@ const CandidateCard = ({ candidate, showDeleteButton = false, onDelete }) => {
 
   return (
     <div className="card relative text-white shadow-lg rounded-lg overflow-hidden transition-transform duration-300 hover:scale-105 hover:shadow-blue-500/50 hover:shadow-lg">
-      {/* Contenedor del avatar con centrado */}
-      <div className="h-48 w-full">
+      {/* Contenedor del avatar con altura reducida */}
+      <div className="h-32 w-full">
         <InitialsAvatar 
           name={name} 
           size="full"
@@ -74,10 +74,10 @@ const CandidateCard = ({ candidate, showDeleteButton = false, onDelete }) => {
         />
       </div>
 
-      <div className="p-6 bg-gray-800/60 backdrop-blur-sm">
-        {/* Mostramos el match percentage solo si existe */}
+      <div className="p-6 bg-gray-800/60 backdrop-blur-sm relative">
+        {/* Mostramos el match percentage solo si existe - en la esquina superior derecha de la sección oscura */}
         {matchPercentage && (
-          <span className="match-percentage absolute top-4 right-4 bg-blue-500 text-white font-semibold py-1 px-4 rounded-full shadow-glow">
+          <span className="match-percentage absolute -top-2 right-4 bg-blue-500 text-white font-semibold py-1 px-3 rounded-full shadow-lg z-10 text-sm">
             {matchPercentage}
           </span>
         )}
